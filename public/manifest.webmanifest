@@ -1,0 +1,20 @@
+{
+  "name": "Leveling Up",
+  "short_name": "Leveling Up",
+  "description": "A game-style life tracker: missions, XP, body, social, money and character.",
+  "start_url": "./#missions",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090C14",
+  "theme_color": "#090C14",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Log training", "url": "./#body" },
+    { "name": "Log money", "url": "./#money" }
+  ]
+}

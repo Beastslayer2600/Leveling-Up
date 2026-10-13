@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090C14">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="A game-style life tracker: missions, XP, body, social, money and character.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Leveling Up">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Leveling Up</title>
+</head>
+<body>
+<div class="app">
+  <!-- Desktop rail -->
+  <aside class="rail" aria-label="Sections">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 2 28 9v14l-12 7L4 23V9z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 20l5-9 5 9M13 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="brand-t"><b>Leveling Up</b><small>Field log</small></span>
+    </div>
+    <nav class="rail-nav" id="rail-nav"></nav>
+    <div class="rail-foot"><p class="mode" id="mode"></p></div>
+  </aside>
+
+  <!-- Player HUD -->
+  <section class="hud" aria-label="Player status">
+    <div class="hud-card">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <div class="hud-top">
+        <button class="emblem" id="hex" type="button" aria-label="Player level">
+          <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
+            <defs><linearGradient id="ringg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD98A"/><stop offset="1" stop-color="#E39A1E"/></linearGradient></defs>
+            <circle class="ring-bg" cx="50" cy="50" r="45"/>
+            <circle class="ring-fg" id="ring" cx="50" cy="50" r="45"/>
+          </svg>
+          <span class="hexa"><small>LV</small><b id="lv">1</b></span>
+        </button>
+        <div class="who">
+          <span class="kicker" id="hud-kicker">Player</span>
+          <h1 id="pname">Player</h1>
+          <div class="rank" id="rank">Recruit</div>
+        </div>
+      </div>
+      <div class="xp-block">
+        <div class="xpline"><span>Next level</span><span><b id="xpin">0</b> / <span id="xpneed">100</span> XP</span></div>
+        <div class="xpbar"><i id="xpbar"></i></div>
+        <div class="xptotal" id="xptotal"></div>
+      </div>
+      <div class="stats3">
+        <div class="stat s-streak"><span class="si" data-icon="flame"></span><span class="sl">Streak</span><b id="streak">0d</b></div>
+        <div class="stat s-today"><span class="si" data-icon="bolt"></span><span class="sl">Today</span><b id="today">+0</b></div>
+        <div class="stat s-ach"><span class="si" data-icon="trophy"></span><span class="sl">Awards</span><b id="achn">0</b></div>
+      </div>
+    </div>
+    <div class="hud-side">
+      <section class="panel">
+        <div class="sec-h"><h2>Disciplines</h2><span>Category levels</span></div>
+        <div class="catlv" id="hud-cats"></div>
+      </section>
+      <section class="panel" id="hud-logp">
+        <div class="sec-h"><h2>XP Log</h2><span>Recent</span></div>
+        <div class="log" id="hud-log"></div>
+      </section>
+    </div>
+  </section>
+
+  <main class="stage">
+    <!-- MISSIONS -->
+    <div class="view" id="v-missions">
+      <header class="view-h"><div><p class="kicker">Daily ops · quests · targets</p><h2>Missions</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>New mission</button></header>
+
+      <div class="duo">
+        <section class="panel virtue" aria-label="Daily virtue">
+          <div class="sec-h"><span class="eyebrow"><span data-icon="cross"></span>Daily virtue</span><span id="v-streak"></span></div>
+          <div><h3 id="v-name">Patience</h3><div class="ref" id="v-ref"></div></div>
+          <p class="principle" id="v-principle"></p>
+          <p class="task" id="v-task"></p>
+          <div class="v-row">
+            <button class="btn faith" type="button" id="v-done">Done · +20 XP</button>
+            <button class="linkbtn" type="button" id="v-swap">Different virtue</button>
+          </div>
+        </section>
+
+        <section class="panel rr" id="rr" aria-label="Release Reset questline">
+          <div class="sec-h"><span class="eyebrow">Faith questline · 7 days</span><span id="rr-count">0/7</span></div>
+          <div><h3>Release Reset</h3><p class="rr-sub">Letting go of what you cannot control, and entrusting it to God. Go at your own pace.</p></div>
+          <div class="pips7" id="rr-pips"></div>
+          <div class="rr-day" id="rr-day"></div>
+          <div class="rr-acts">
+            <button class="btn ghost" type="button" id="rr-reach">Reach-back tool</button>
+            <button class="btn ghost" type="button" id="rr-plan">My release plan</button>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel coach" id="coach" hidden>
+        <div class="sec-h"><h2><span data-icon="spark"></span>Coach</h2><span>Unlocks missions from your logs</span></div>
+        <p>Tell the coach what to work on, or leave it blank and it reads your body, social, money and faith logs.</p>
+        <div class="coach-row">
+          <input class="in" id="c-focus" maxlength="140" placeholder="e.g. patience, eat proper meals, learn Excel">
+          <button class="btn primary" type="button" id="c-go">Unlock</button>
+        </div>
+        <div class="status" id="c-status" hidden></div>
+        <div class="list" id="c-list"></div>
+      </section>
+
+      <nav class="chips" id="chips" aria-label="Filter missions by category"></nav>
+
+      <section class="sec">
+        <div class="sec-h"><h2>Daily Ops</h2><span id="dailyCount">Resets at midnight</span></div>
+        <div class="list" id="daily"></div>
+      </section>
+      <section class="sec">
+        <div class="sec-h"><h2>Active Quests</h2><span id="activeCount"></span></div>
+        <div class="list" id="active"></div>
+      </section>
+      <section class="sec" id="doneSec" hidden>
+        <div class="sec-h"><h2>Completed</h2><button class="linkbtn" id="clearDone" type="button">Clear completed</button></div>
+        <div class="list" id="done"></div>
+      </section>
+      <section class="sec only-narrow" id="logSec" hidden>
+        <div class="sec-h"><h2>XP Log</h2><span>Recent</span></div>
+        <div class="panel log-panel"><div class="log" id="log"></div></div>
+      </section>
+    </div>
+
+    <!-- BODY -->
+    <div class="view" id="v-body" hidden>
+      <header class="view-h"><div><p class="kicker">Training · fuel · steps · weight</p><h2>Body</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>Log training</button></header>
+      <div class="stats3 big">
+        <div class="stat"><span class="sl">Gym · week</span><b id="t-gym">0</b></div>
+        <div class="stat"><span class="sl">Cardio · week</span><b id="t-cardio">0 min</b></div>
+        <div class="stat"><span class="sl">Training</span><b id="t-lv">1</b></div>
+      </div>
+      <div class="duo">
+        <section class="panel">
+          <div class="sec-h"><h2>Today</h2><button class="linkbtn gold" type="button" id="b-targets">Targets</button></div>
+          <div class="quick">
+            <div class="qbox"><span>Steps</span><b id="b-steps">—</b>
+              <div class="meter"><i id="b-stepm"></i></div>
+              <div class="qin"><input class="in" id="q-steps" type="number" min="0" max="100000" inputmode="numeric" placeholder="Steps" aria-label="Steps today"><button class="mini go" type="button" id="q-steps-save">Save</button></div></div>
+            <div class="qbox"><span>Weight</span><b id="b-weight">—</b>
+              <div class="meter ghost"><i></i></div>
+              <div class="qin"><input class="in" id="q-weight" type="number" min="20" max="300" step="0.1" inputmode="decimal" placeholder="kg" aria-label="Weight today in kg"><button class="mini go" type="button" id="q-weight-save">Save</button></div></div>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="sec-h"><h2>Fuel</h2><span id="b-fuel"></span></div>
+          <div class="meter" id="b-kcalbar" hidden><i id="b-kcal" class="good"></i></div>
+          <div class="list" id="b-meals"></div>
+          <button class="btn ghost" type="button" id="b-addmeal"><span data-icon="plus"></span>Log meal</button>
+        </section>
+      </div>
+      <div class="duo">
+        <section class="panel">
+          <div class="sec-h"><h2>Steps · 7 days</h2><span id="b-stepavg"></span></div>
+          <div class="stepsbars" id="b-stepbars"></div>
+        </section>
+        <section class="panel">
+          <div class="sec-h"><h2>Weight trend</h2><span id="b-wdelta"></span></div>
+          <div id="b-wchart"></div>
+        </section>
+      </div>
+      <section class="sec">
+        <div class="sec-h"><h2>Personal Bests</h2><span id="t-pbcount"></span></div>
+        <div class="pbs" id="t-pbs"></div>
+      </section>
+      <section class="sec">
+        <div class="sec-h"><h2>Sessions</h2><span>Tap to edit</span></div>
+        <div class="list" id="t-list"></div>
+      </section>
+    </div>
+
+    <!-- SOCIAL -->
+    <div class="view" id="v-social" hidden>
+      <header class="view-h"><div><p class="kicker">Posts · people · events</p><h2>Social</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>Log social</button></header>
+      <div class="stats3 big">
+        <div class="stat"><span class="sl">IG · week</span><b id="s-ig">0</b></div>
+        <div class="stat"><span class="sl">LinkedIn · wk</span><b id="s-li">0</b></div>
+        <div class="stat"><span class="sl">Catch-ups · wk</span><b id="s-irl">0</b></div>
+      </div>
+      <section class="panel standing">
+        <div class="sec-h"><h2>Social Standing</h2><span id="s-lv"></span></div>
+        <div class="standing-row"><b id="s-standing">Off the grid</b><span><b id="s-30">0</b> catch-ups in 30 days</span></div>
+        <div class="meter tall social"><i id="s-bar"></i></div>
+      </section>
+      <div class="duo">
+        <section class="sec">
+          <div class="sec-h"><h2>Friends &amp; Groups</h2><span>Last contact</span></div>
+          <div class="panel groups" id="s-groups"></div>
+        </section>
+        <section class="sec">
+          <div class="sec-h"><h2>Activity</h2><span>Tap to edit</span></div>
+          <div class="list" id="s-list"></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- MONEY -->
+    <div class="view" id="v-money" hidden>
+      <header class="view-h"><div><p class="kicker">Ledger · good and bad calls</p><h2>Money</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>Log money</button></header>
+      <div class="monthnav">
+        <button class="navbtn" type="button" id="m-prev" aria-label="Previous month"><span data-icon="chevL"></span></button>
+        <b id="m-month">—</b>
+        <button class="navbtn" type="button" id="m-next" aria-label="Next month"><span data-icon="chevR"></span></button>
+      </div>
+      <div class="stats3 big">
+        <div class="stat"><span class="sl">Money in</span><b id="m-in" class="pos">R0</b></div>
+        <div class="stat"><span class="sl">Money out</span><b id="m-out">R0</b></div>
+        <div class="stat"><span class="sl">Net</span><b id="m-net">R0</b></div>
+      </div>
+      <div class="duo">
+        <section class="panel">
+          <div class="sec-h"><h2>Decisions</h2><span id="m-score"></span></div>
+          <div class="split" id="m-split"></div>
+          <div class="legend" id="m-legend"></div>
+        </section>
+        <section class="panel" id="m-catsec">
+          <div class="sec-h"><h2>Where it went</h2><span>By category</span></div>
+          <div class="list tight" id="m-cats"></div>
+        </section>
+      </div>
+      <section class="sec">
+        <div class="sec-h"><h2>Ledger</h2><span>Tap to edit</span></div>
+        <div class="list" id="m-list"></div>
+      </section>
+    </div>
+
+    <!-- CHARACTER -->
+    <div class="view" id="v-character" hidden>
+      <header class="view-h"><div><p class="kicker">Sheet · skills · trophies</p><h2>Character</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>Add skill</button></header>
+      <div class="duo">
+        <section class="panel">
+          <div class="sec-h"><h2>Attributes</h2><span>Grow from XP</span></div>
+          <div class="list tight" id="ch-attrs"></div>
+        </section>
+        <section class="panel chapter">
+          <div class="sec-h"><h2>Current Chapter</h2><button class="linkbtn gold" type="button" data-add="chapter">+ Add</button></div>
+          <div id="ch-chapter"></div>
+        </section>
+      </div>
+      <section class="sec">
+        <div class="sec-h"><h2>Skills</h2><button class="linkbtn gold" type="button" data-add="skill">+ Add</button></div>
+        <div class="grid2" id="ch-skills"></div>
+      </section>
+      <section class="sec">
+        <div class="sec-h"><h2>Unique Abilities</h2><button class="linkbtn gold" type="button" data-add="feat">+ Add</button></div>
+        <div class="grid2" id="ch-feats"></div>
+      </section>
+      <section class="sec">
+        <div class="sec-h"><h2>Achievements</h2><span id="ch-achn"></span></div>
+        <div class="achs" id="ch-achs"></div>
+      </section>
+      <section class="panel">
+        <div class="sec-h"><h2>Profile &amp; data</h2><span>Stays on this device</span></div>
+        <p class="hint">Your name and a line about you brief the coach. Back up your log to a file you keep yourself, and restore it on another device.</p>
+        <div class="acts">
+          <button class="btn ghost" type="button" id="p-edit">Edit profile</button>
+          <button class="btn ghost" type="button" id="d-export"><span data-icon="download"></span>Back up</button>
+          <button class="btn ghost" type="button" id="d-import"><span data-icon="upload"></span>Restore</button>
+          <input type="file" id="d-file" accept="application/json,.json" hidden>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<button class="fab" id="fab" type="button" data-fab><span data-icon="plus"></span><span id="fabLbl">New mission</span></button>
+
+<nav class="tabbar" aria-label="Sections"><div class="tabs-in" id="tabbar"></div></nav>
+
+<datalist id="exlist"></datalist>
+<datalist id="grouplist"></datalist>
+
+<div class="scrim" id="scrim" hidden>
+  <!-- mission -->
+  <form class="sheet" id="f-mission" autocomplete="off" hidden>
+    <h3 id="q-h">New mission</h3>
+    <div class="fld"><label for="q-title">Mission</label><input class="in" id="q-title" maxlength="120" required placeholder="e.g. Annual review with a client"></div>
+    <div class="fld"><label for="q-note">Objective note (optional)</label><input class="in" id="q-note" maxlength="200" placeholder="Short detail or next step"></div>
+    <div class="row">
+      <div class="fld"><label for="q-cat">Category</label><select class="in" id="q-cat"></select></div>
+      <div class="fld"><label for="q-kind">Type</label>
+        <select class="in" id="q-kind"><option value="quest">One-off quest</option><option value="daily">Daily op</option><option value="counter">Tracked target</option></select></div>
+    </div>
+    <div class="row" id="q-ctr">
+      <div class="fld"><label for="q-target">Target</label><input class="in" id="q-target" type="number" min="1" max="999" value="5"></div>
+      <div class="fld"><label for="q-period">Resets</label><select class="in" id="q-period"><option value="none">Never</option><option value="week">Weekly</option><option value="month">Monthly</option></select></div>
+    </div>
+    <fieldset class="fld"><legend id="q-diffL">Difficulty</legend><div class="seg" id="q-diff"></div></fieldset>
+    <div class="fld" id="q-dueF"><label for="q-due">Due date (optional)</label><input class="in" id="q-due" type="date"></div>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="q-save">Add mission</button></div>
+  </form>
+
+  <!-- workout -->
+  <form class="sheet" id="f-workout" autocomplete="off" hidden>
+    <h3 id="w-h">Log training</h3>
+    <fieldset class="fld"><legend>Type</legend><div class="seg">
+      <input type="radio" name="wtype" id="w-gym" value="gym"><label for="w-gym">Gym session</label>
+      <input type="radio" name="wtype" id="w-cardio" value="cardio"><label for="w-cardio">Cardio</label></div></fieldset>
+    <div class="row">
+      <div class="fld"><label for="w-date">Date</label><input class="in" id="w-date" type="date" required></div>
+      <div class="fld" id="w-titleF"><label for="w-title">Session</label><input class="in" id="w-title" maxlength="60" placeholder="Push day"></div>
+      <div class="fld" id="w-actF"><label for="w-act">Activity</label><select class="in" id="w-act"><option>Run</option><option>Walk</option><option>Cycle</option><option>Row</option><option>Swim</option><option>Stairs</option><option>Other</option></select></div>
+    </div>
+    <div class="fld" id="w-exF">
+      <label>Exercises</label>
+      <div class="hint">Sets as kg×reps, comma separated: 80x8, 80x8, 85x6. Bodyweight: just reps, like 12, 10, 8.</div>
+      <div class="list" id="w-ex"></div>
+      <button class="btn ghost" type="button" id="w-add"><span data-icon="plus"></span>Add exercise</button>
+    </div>
+    <div class="row" id="w-cardioF">
+      <div class="fld"><label for="w-mins">Minutes</label><input class="in" id="w-mins" type="number" min="1" max="600" placeholder="30"></div>
+      <div class="fld"><label for="w-km">Distance km (optional)</label><input class="in" id="w-km" type="number" min="0" max="500" step="0.01" placeholder="5"></div>
+    </div>
+    <div class="fld"><label for="w-note">Notes (optional)</label><input class="in" id="w-note" maxlength="200" placeholder="How it felt, energy, sleep"></div>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="w-save">Log it</button></div>
+  </form>
+
+  <!-- meal -->
+  <form class="sheet" id="f-meal" autocomplete="off" hidden>
+    <h3 id="f-h">Log meal</h3>
+    <fieldset class="fld"><legend>Meal</legend><div class="seg">
+      <input type="radio" name="mtype" id="mt-b" value="Breakfast"><label for="mt-b">Breakfast</label>
+      <input type="radio" name="mtype" id="mt-l" value="Lunch"><label for="mt-l">Lunch</label>
+      <input type="radio" name="mtype" id="mt-d" value="Dinner"><label for="mt-d">Dinner</label>
+      <input type="radio" name="mtype" id="mt-s" value="Snack"><label for="mt-s">Snack</label>
+      <input type="radio" name="mtype" id="mt-p" value="Shake"><label for="mt-p">Shake</label></div></fieldset>
+    <div class="fld"><label for="f-what">What you ate</label><input class="in" id="f-what" maxlength="120" required placeholder="Chicken, rice and veg"></div>
+    <div class="row3">
+      <div class="fld"><label for="f-kcal">kcal</label><input class="in" id="f-kcal" type="number" min="0" max="6000" inputmode="numeric" placeholder="650"></div>
+      <div class="fld"><label for="f-protein">Protein g</label><input class="in" id="f-protein" type="number" min="0" max="400" inputmode="numeric" placeholder="40"></div>
+      <div class="fld"><label for="f-date">Date</label><input class="in" id="f-date" type="date" required></div>
+    </div>
+    <fieldset class="fld"><legend>Source</legend><div class="seg">
+      <input type="radio" name="msrc" id="ms-home" value="home"><label for="ms-home">Home-made<small>+8</small></label>
+      <input type="radio" name="msrc" id="ms-bought" value="bought"><label for="ms-bought">Bought / takeaway<small>+3</small></label></div></fieldset>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="f-save">Log it</button></div>
+  </form>
+
+  <!-- targets -->
+  <form class="sheet" id="f-targets" autocomplete="off" hidden>
+    <h3>Body targets</h3>
+    <div class="row3">
+      <div class="fld"><label for="g-steps">Steps / day</label><input class="in" id="g-steps" type="number" min="1000" max="50000" step="500" inputmode="numeric"></div>
+      <div class="fld"><label for="g-kcal">kcal / day</label><input class="in" id="g-kcal" type="number" min="0" max="8000" step="50" inputmode="numeric" placeholder="Optional"></div>
+      <div class="fld"><label for="g-weight">Goal kg</label><input class="in" id="g-weight" type="number" min="30" max="250" step="0.5" inputmode="decimal" placeholder="Optional"></div>
+    </div>
+    <div class="acts"><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit">Save targets</button></div>
+  </form>
+
+  <!-- social -->
+  <form class="sheet" id="f-social" autocomplete="off" hidden>
+    <h3 id="s-h">Log social</h3>
+    <fieldset class="fld"><legend>Type</legend><div class="seg">
+      <input type="radio" name="skind" id="sk-ig" value="ig"><label for="sk-ig">Instagram post<small>20</small></label>
+      <input type="radio" name="skind" id="sk-li" value="li"><label for="sk-li">LinkedIn post<small>20</small></label>
+      <input type="radio" name="skind" id="sk-irl" value="irl"><label for="sk-irl">Catch-up<small>25</small></label>
+      <input type="radio" name="skind" id="sk-event" value="event"><label for="sk-event">Event / networking<small>35</small></label></div></fieldset>
+    <div class="fld"><label for="s-what">What</label><input class="in" id="s-what" maxlength="120" required placeholder="Coffee, braai, reel on TFSAs…"></div>
+    <div class="row">
+      <div class="fld" id="s-groupF"><label for="s-group">Who / friend group</label><input class="in" id="s-group" maxlength="60" list="grouplist" placeholder="Varsity crew"></div>
+      <div class="fld" id="s-engF"><label for="s-eng">Engagement (optional)</label><input class="in" id="s-eng" type="number" min="0" placeholder="Likes + comments"></div>
+      <div class="fld"><label for="s-date">Date</label><input class="in" id="s-date" type="date" required></div>
+    </div>
+    <div class="fld"><label for="s-note">Notes (optional)</label><input class="in" id="s-note" maxlength="200"></div>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="s-save">Log it</button></div>
+  </form>
+
+  <!-- money -->
+  <form class="sheet" id="f-money" autocomplete="off" hidden>
+    <h3 id="m-h">Log money</h3>
+    <fieldset class="fld"><legend>Direction</legend><div class="seg">
+      <input type="radio" name="mdir" id="md-out" value="out"><label for="md-out">Spent</label>
+      <input type="radio" name="mdir" id="md-in" value="in"><label for="md-in">Received</label></div></fieldset>
+    <div class="row">
+      <div class="fld"><label for="m-amount">Amount (R)</label><input class="in" id="m-amount" type="number" min="0.01" step="0.01" required inputmode="decimal" placeholder="250"></div>
+      <div class="fld"><label for="m-date">Date</label><input class="in" id="m-date" type="date" required></div>
+    </div>
+    <div class="fld"><label for="m-what">On what / from where</label><input class="in" id="m-what" maxlength="120" required placeholder="Uber Eats, commission, gym fee…"></div>
+    <div class="fld"><label for="m-cat">Category</label><select class="in" id="m-cat"></select></div>
+    <fieldset class="fld" id="m-verdictF"><legend>Verdict</legend><div class="seg">
+      <input type="radio" name="mverdict" id="mv-good" value="good"><label for="mv-good">Good call<small>+10</small></label>
+      <input type="radio" name="mverdict" id="mv-neutral" value="neutral"><label for="mv-neutral">Neutral</label>
+      <input type="radio" name="mverdict" id="mv-bad" value="bad"><label for="mv-bad">Bad call</label></div></fieldset>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="m-save">Log it</button></div>
+  </form>
+
+  <!-- reach-back tool -->
+  <form class="sheet" id="f-reach" autocomplete="off" hidden>
+    <h3>When I want to reach back</h3>
+    <div class="pips7 six" id="rb-pips"></div>
+    <div class="eyebrow" id="rb-step">Notice</div>
+    <p class="rb-text" id="rb-text"></p>
+    <div class="acts"><button class="btn" type="button" id="rb-back">Back</button><span class="grow"></span><button class="btn" type="button" data-cancel>Close</button><button class="btn faith" type="submit" id="rb-next">Next</button></div>
+  </form>
+
+  <!-- release plan -->
+  <form class="sheet" id="f-plan" autocomplete="off" hidden>
+    <h3>My release plan</h3>
+    <div class="hint">Come back here when a memory or urge pulls you backward. Short, honest answers are enough. It stays on this device and is never sent to the coach.</div>
+    <div id="plan-fields" class="stack"></div>
+    <div class="acts"><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn faith" type="submit">Save plan</button></div>
+  </form>
+
+  <!-- character entry -->
+  <form class="sheet" id="f-entry" autocomplete="off" hidden>
+    <h3 id="e-h">Add skill</h3>
+    <div class="fld"><label for="e-a" id="e-aL">Skill</label><input class="in" id="e-a" maxlength="80" required></div>
+    <div class="fld" id="e-lvF"><label for="e-lv">Level <span id="e-lvN">5</span> / 10</label><input id="e-lv" type="range" min="1" max="10" value="5"></div>
+    <div class="fld"><label for="e-b" id="e-bL">Note (optional)</label><input class="in" id="e-b" maxlength="200"></div>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="e-save">Save</button></div>
+  </form>
+
+  <!-- profile -->
+  <form class="sheet" id="f-profile" autocomplete="off" hidden>
+    <h3>Profile</h3>
+    <div class="fld"><label for="p-name">Player name</label><input class="in" id="p-name" maxlength="40" placeholder="Shown on your HUD"></div>
+    <div class="fld"><label for="p-about">About you (optional)</label><textarea class="in" id="p-about" maxlength="400" placeholder="Work, season of life, what you're building. Only used to brief the coach."></textarea></div>
+    <div class="acts"><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit">Save</button></div>
+  </form>
+</div>
+
+<div id="toasts" aria-live="polite"></div>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Secrets and anything personal. Your data lives in the app (or a backup
+# file you keep outside this folder), never in the repo.
+.env
+.env.*
+*.local.json
+*.local.*
+backup*.json
+leveling-up-backup-*.json
+
+# Local tooling
+.claude/
