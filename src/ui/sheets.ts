@@ -6,9 +6,10 @@ import { CATS, DIFF, type DiffId } from "../lib/leveling/xp";
 import type { Meal, Money, Quest, Social, SocialKind, Workout } from "../lib/leveling/types";
 import { $, esc, fmtN, radio, radioVal, setVal, val } from "./dom";
 import { toast } from "./fx";
+import { deleteJournal, fillJournal, saveJournalEdit } from "./journal";
 import { S, after, award, drop, newId, put, render, save } from "./state";
 
-const FORMS = ["mission", "workout", "meal", "targets", "social", "money", "entry", "reach", "plan", "profile"] as const;
+const FORMS = ["mission", "workout", "meal", "targets", "social", "money", "entry", "reach", "plan", "profile", "journal"] as const;
 export type SheetName = (typeof FORMS)[number];
 
 type Item = { id: string } | null;
@@ -23,6 +24,7 @@ const FILL: Record<SheetName, (it: never) => void> = {
   reach: fillReach,
   plan: fillPlan,
   profile: fillProfile,
+  journal: fillJournal,
 };
 
 let lastFocus: HTMLElement | null = null;
@@ -66,6 +68,13 @@ export function initSheets(): void {
         b.textContent = "Tap again to delete";
         return;
       }
+      if (S.sheetName === "journal") {
+        deleteJournal(S.editId!);
+        closeSheet();
+        render();
+        toast("Entry deleted");
+        return;
+      }
       if (S.sheetName === "entry") {
         const k = ENTRY[S.entryType].key;
         S.data.sheet = { ...S.data.sheet, [k]: (S.data.sheet[k] as { id: string }[]).filter((x) => x.id !== S.editId) };
@@ -96,6 +105,13 @@ export function initSheets(): void {
   initEntry();
   initRelease();
   initProfile();
+  $("f-journal").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (S.editId) saveJournalEdit(S.editId);
+    closeSheet();
+    render();
+    toast("Entry updated");
+  });
 }
 
 /* ---------- mission ---------- */

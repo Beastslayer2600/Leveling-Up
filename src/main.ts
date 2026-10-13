@@ -16,6 +16,7 @@ import { completeVirtue, rrState, todayVirtue, VIRTUE_XP } from "./lib/leveling/
 import type { Quest } from "./lib/leveling/types";
 import { $, ICON } from "./ui/dom";
 import { toast } from "./ui/fx";
+import { initJournal } from "./ui/journal";
 import { closeSheet, initSheets, openCommitMission, openEntry, openSheet } from "./ui/sheets";
 import { S, after, award, drop, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
 import { coachEnabled, render, renderNav } from "./ui/views";
@@ -31,6 +32,7 @@ document.querySelectorAll<HTMLElement>("[data-icon]").forEach((el) => {
 S.tab = initialTab();
 renderNav();
 initSheets();
+initJournal();
 
 /* ---------- missions ---------- */
 
@@ -216,7 +218,10 @@ document.addEventListener("click", (e) => {
     return;
   }
   if (b.hasAttribute("data-fab")) {
-    if (S.tab === "character") openEntry("skill", null);
+    if (S.tab === "journal") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      $("j-mic").click();
+    } else if (S.tab === "character") openEntry("skill", null);
     else openSheet(({ missions: "mission", body: "workout", social: "social", money: "money" } as const)[S.tab]);
     return;
   }
@@ -232,6 +237,8 @@ document.addEventListener("click", (e) => {
     case "edit-f": if (find(S.data.meals)) openSheet("meal", find(S.data.meals)); break;
     case "edit-s": if (find(S.data.social)) openSheet("social", find(S.data.social)); break;
     case "edit-m": if (find(S.data.money)) openSheet("money", find(S.data.money)); break;
+    case "edit-j": if (find(S.data.journal)) openSheet("journal", find(S.data.journal)); break;
+    case "j-more": b.classList.toggle("open"); break;
     case "edit-e": openEntry(b.dataset.type as "chapter" | "skill" | "feat", id); break;
     case "filter": S.filter = b.dataset.cat!; render(); break;
     case "c-accept": acceptSug(+b.dataset.i!); break;

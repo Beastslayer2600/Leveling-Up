@@ -24,6 +24,8 @@ export interface Ctx {
   rrDone: boolean;
   reach: number;
   poly: number;
+  journalDays: number;
+  voiceNotes: number;
 }
 
 export interface Achievement {
@@ -57,6 +59,8 @@ export const ACH: Achievement[] = [
   { id: "pincher", name: "Penny Pincher", d: "Log 10 good-call spends.", f: (c) => c.good >= 10 },
   { id: "confess", name: "Confession Booth", d: "Own up to 5 bad-call spends.", hidden: true, f: (c) => c.bad >= 5 },
   { id: "black", name: "In the Black", d: "Finish a month with more in than out.", f: (c) => c.black },
+  { id: "journal7", name: "Field Notes", d: "Journal on 7 different days.", f: (c) => c.journalDays >= 7 },
+  { id: "voice", name: "On the Record", d: "Save a voice note in your journal.", hidden: true, f: (c) => c.voiceNotes >= 1 },
   { id: "grateful", name: "Grateful Heart", d: "Complete 7 daily virtues.", f: (c) => c.virtues >= 7 },
   { id: "fruit", name: "Fruit of the Spirit", d: "Practise all nine fruits of the Spirit (Galatians 5).", f: (c) => c.fruits >= 9 },
   { id: "openhand", name: "Open Hand", d: "Finish the 7-day Release Reset.", f: (c) => c.rrDone },
@@ -124,6 +128,8 @@ export function ctx(data: Data, now: Date = new Date()): Ctx {
     level: levelOf(st.xp, PLAYER_BASE).level,
     rrDone: (data.release.cycles || 0) > 0 || Object.keys(data.release.days || {}).length >= 7,
     reach: data.release.reach || 0,
+    journalDays: new Set(data.journal.map((e) => e.date)).size,
+    voiceNotes: data.journal.filter((e) => e.audio).length,
     poly: CATS.filter((c) => levelOf(st.cat[c.id] || 0, CATEGORY_BASE).level >= 3).length,
   };
 }

@@ -73,6 +73,12 @@
     <div class="view" id="v-missions">
       <header class="view-h"><div><p class="kicker">Daily ops · quests · targets</p><h2>Missions</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>New mission</button></header>
 
+      <button class="nudge" id="j-nudge" type="button" data-tab="journal" hidden>
+        <span class="nudge-i" data-icon="mic"></span>
+        <span class="nudge-t"><b>How was your day?</b><small>Debrief in a voice note or a few lines · +15 XP</small></span>
+        <span class="nudge-go" data-icon="chevR"></span>
+      </button>
+
       <div class="duo">
         <section class="panel virtue" aria-label="Daily virtue">
           <div class="sec-h"><span class="eyebrow"><span data-icon="cross"></span>Daily virtue</span><span id="v-streak"></span></div>
@@ -125,6 +131,49 @@
       <section class="sec only-narrow" id="logSec" hidden>
         <div class="sec-h"><h2>XP Log</h2><span>Recent</span></div>
         <div class="panel log-panel"><div class="log" id="log"></div></div>
+      </section>
+    </div>
+
+    <!-- JOURNAL -->
+    <div class="view" id="v-journal" hidden>
+      <header class="view-h"><div><p class="kicker">Debrief · voice notes · reflection</p><h2>Journal</h2></div></header>
+
+      <section class="panel debrief" aria-label="Daily debrief">
+        <div class="sec-h"><span class="eyebrow"><span data-icon="journal"></span>Daily debrief</span><span id="j-status"></span></div>
+        <div class="j-q"><h3 id="j-prompt">How was your day?</h3><button class="linkbtn" id="j-swap" type="button">Another question</button></div>
+        <div class="moods" id="j-moods" role="radiogroup" aria-label="How you feel"></div>
+
+        <div class="recorder" id="j-rec" data-state="idle">
+          <button class="mic" id="j-mic" type="button" aria-label="Record a voice note"><span class="mic-ring"></span><span class="ico"></span></button>
+          <div class="rec-body">
+            <div class="rec-wave" id="j-wave" aria-hidden="true"></div>
+            <div class="rec-meta"><b id="j-time">0:00</b><span id="j-hint">Tap the mic and talk about your day</span></div>
+          </div>
+        </div>
+        <div class="j-clip" id="j-clip" hidden>
+          <audio controls id="j-audio"></audio>
+          <button class="linkbtn" id="j-clipdel" type="button">Discard</button>
+        </div>
+
+        <div class="tx-row" id="j-txwrap">
+          <label class="switch"><input type="checkbox" id="j-tx"><span class="sw"></span><span>Type it out as I speak</span></label>
+          <select class="in tiny" id="j-lang" aria-label="Speech language"><option value="en-ZA">English</option><option value="af-ZA">Afrikaans</option></select>
+          <small class="hint">Uses your browser's speech service (Google on Chrome, Apple on iPhone). The voice note itself stays on this device.</small>
+        </div>
+
+        <textarea class="in j-text" id="j-text" maxlength="5000" placeholder="Or write it out. What happened, how it felt, what you'd keep or change…"></textarea>
+        <div class="acts"><span class="hint">Private. Never sent to the coach.</span><span class="grow"></span><button class="btn primary" id="j-save" type="button">Save entry</button></div>
+      </section>
+
+      <div class="stats3 big">
+        <div class="stat"><span class="sl">Entries</span><b id="j-n">0</b></div>
+        <div class="stat"><span class="sl">Streak</span><b id="j-streak">0</b></div>
+        <div class="stat"><span class="sl">Voice</span><b id="j-voice">0</b></div>
+      </div>
+
+      <section class="sec">
+        <div class="sec-h"><h2>Entries</h2><span id="j-count"></span></div>
+        <div class="list" id="j-list"></div>
       </section>
     </div>
 
@@ -414,6 +463,16 @@
     <div class="fld" id="e-lvF"><label for="e-lv">Level <span id="e-lvN">5</span> / 10</label><input id="e-lv" type="range" min="1" max="10" value="5"></div>
     <div class="fld"><label for="e-b" id="e-bL">Note (optional)</label><input class="in" id="e-b" maxlength="200"></div>
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="e-save">Save</button></div>
+  </form>
+
+  <!-- journal entry -->
+  <form class="sheet" id="f-journal" autocomplete="off" hidden>
+    <h3>Edit entry</h3>
+    <p class="hint" id="jf-prompt"></p>
+    <fieldset class="fld"><legend>Mood</legend><div class="seg" id="jf-moods"></div></fieldset>
+    <div class="fld"><label for="jf-text">Entry</label><textarea class="in" id="jf-text" maxlength="5000" rows="7"></textarea></div>
+    <p class="hint" id="jf-audio">The voice note stays attached. Deleting the entry deletes it too.</p>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit">Save</button></div>
   </form>
 
   <!-- profile -->

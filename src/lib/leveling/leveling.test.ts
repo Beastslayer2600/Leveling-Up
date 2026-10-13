@@ -7,8 +7,9 @@ import { applyEvent, EVENT_TYPES, type LevelEvent } from "./events";
 import { closed, eff, isDone, stepCounter, toggleQuest } from "./missions";
 import { e1rm, findNewPbs, parseSets, pbMap, workoutXp } from "./training";
 import { completeVirtue, rrState, todayVirtue, VIRTUES } from "./virtues";
+import { journalStreak, journalXp, todayPrompt } from "./journal";
 import { applyAward, blankStats, levelOf, liveStreak, rankOf } from "./xp";
-import type { Data, Quest, Workout } from "./types";
+import type { Data, JournalEntry, Quest, Workout } from "./types";
 
 // Tuesday 13 Oct 2026, 10:00 local.
 const NOW = new Date(2026, 9, 13, 10, 0, 0);
@@ -210,9 +211,9 @@ describe("virtues", () => {
 });
 
 describe("achievements", () => {
-  it("has 36 achievements with unique ids", () => {
-    expect(ACH).toHaveLength(36);
-    expect(new Set(ACH.map((a) => a.id)).size).toBe(36);
+  it("has 38 achievements with unique ids", () => {
+    expect(ACH).toHaveLength(38);
+    expect(new Set(ACH.map((a) => a.id)).size).toBe(38);
   });
   it("unlocks data achievements once", () => {
     const d = blankData();
@@ -306,5 +307,42 @@ describe("data", () => {
     expect(d.stats.events).toEqual({});
     expect(d.sheet.stepGoal).toBe(10000);
     expect(d.workouts).toEqual([]);
+  });
+});
+
+describe("journal", () => {
+  const entry = (date: string, p: Partial<JournalEntry> = {}): JournalEntry => ({
+    id: date + Math.random(), date, created: 0, prompt: "How was your day?", text: "x", mood: 4, xp: 0, ...p,
+  });
+  it("leads with 'How was your day?' and rotates alternatives", () => {
+    expect(todayPrompt(NOW)).toBe("How was your day?");
+    expect(todayPrompt(NOW, 1)).not.toBe("How was your day?");
+    expect(todayPrompt(NOW, 1)).not.toBe(todayPrompt(NOW, 2));
+  });
+  it("pays the first entry of a day only", () => {
+    expect(journalXp([], "2026-10-13")).toBe(15);
+    const paid = entry("2026-10-13", { id: "a", xp: 15 });
+    expect(journalXp([paid], "2026-10-13")).toBe(0);
+    expect(journalXp([paid], "2026-10-14")).toBe(15);
+    expect(journalXp([paid], "2026-10-13", "a")).toBe(15);
+  });
+  it("counts a journaling streak through yesterday", () => {
+    const es = ["2026-10-10", "2026-10-11", "2026-10-12"].map((d) => entry(d));
+    expect(journalStreak(es, NOW)).toBe(3);
+    expect(journalStreak([...es, entry("2026-10-13")], NOW)).toBe(4);
+    expect(journalStreak(es, at(15))).toBe(0);
+  });
+  it("unlocks Field Notes and On the Record", () => {
+    const d = blankData();
+    for (let i = 1; i <= 7; i++) d.journal.push(entry(`2026-10-0${i}`));
+    d.journal[0].audio = { mime: "audio/webm", secs: 12 };
+    const got = checkAchievements(d, NOW);
+    expect(got).toContain("journal7");
+    expect(got).toContain("voice");
+  });
+  it("keeps the journal out of the coach prompt", () => {
+    const d = blankData();
+    d.journal.push(entry("2026-10-13", { text: "secret diary line" }));
+    expect(buildPrompt(d, "", NOW)).not.toContain("secret diary line");
   });
 });

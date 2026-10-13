@@ -6,11 +6,14 @@ import { e1rm, exSummary, pbMap } from "../lib/leveling/training";
 import { RR_DAYS, VIRTUES, rrState, todayVirtue } from "../lib/leveling/virtues";
 import { CAT, CATEGORY_BASE, CATS, PLAYER_BASE, levelOf, liveStreak, rankOf } from "../lib/leveling/xp";
 import type { Quest } from "../lib/leveling/types";
+import { journaledOn } from "../lib/leveling/journal";
+import { renderJournal } from "./journal";
 import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, shortD, sumBy } from "./dom";
 import { S, VIEWS, type Tab } from "./state";
 
 export const TAB_META: Record<Tab, { label: string; sub: string; fab: string }> = {
   missions: { label: "Missions", sub: "Ops, quests, virtue", fab: "New mission" },
+  journal: { label: "Journal", sub: "Debrief and voice notes", fab: "Record" },
   body: { label: "Body", sub: "Training, fuel, steps", fab: "Log training" },
   social: { label: "Social", sub: "Posts and people", fab: "Log social" },
   money: { label: "Money", sub: "Ledger and calls", fab: "Log money" },
@@ -56,7 +59,7 @@ export function render(): void {
   $("mode").innerHTML = `<span class="dot-live"></span>Saved on this device. Back up from Character.`;
 
   renderHudSide();
-  ({ missions: renderMissions, body: renderBody, social: renderSocial, money: renderMoney, character: renderCharacter })[S.tab]();
+  ({ missions: renderMissions, journal: renderJournal, body: renderBody, social: renderSocial, money: renderMoney, character: renderCharacter })[S.tab]();
 }
 
 function logRows(): string {
@@ -128,6 +131,7 @@ function renderMissions(): void {
   $("v-streak").textContent =
     `${vs.count || 0} done` + ((vs.last === dkey() || vs.last === yday()) && (vs.streak || 0) > 1 ? ` · ${vs.streak}d run` : "");
   renderRelease();
+  $("j-nudge").hidden = journaledOn(S.data.journal);
 
   const counts: Record<string, number> = {};
   quests.forEach((q) => { if (!isDone(q)) counts[q.cat] = (counts[q.cat] || 0) + 1; });

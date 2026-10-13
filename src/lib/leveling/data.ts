@@ -59,6 +59,7 @@ const STARTERS: Omit<Quest, "id" | "created">[] = [
 export function blankData(now = Date.now()): Data {
   return {
     quests: STARTERS.map((q, i) => ({ ...q, id: "ex" + i, starter: true, created: now + i })),
+    journal: [],
     workouts: [],
     social: [],
     money: [],
@@ -77,6 +78,7 @@ export function normalize(raw: unknown): Data {
   const arr = <T>(x: T[] | undefined) => (Array.isArray(x) ? x : []);
   return {
     quests: arr(d.quests),
+    journal: arr(d.journal),
     workouts: arr(d.workouts),
     social: arr(d.social),
     money: arr(d.money),

@@ -194,8 +194,22 @@ export interface CoachState {
   focus?: string;
 }
 
+export interface JournalEntry {
+  id: string;
+  date: string;
+  created: number;
+  prompt: string;
+  text: string;
+  /** 1 (rough) to 5 (great). */
+  mood: number | null;
+  /** Voice note kept in this device's IndexedDB under the entry id. */
+  audio?: { mime: string; secs: number } | null;
+  xp: number;
+}
+
 export interface Data {
   quests: Quest[];
+  journal: JournalEntry[];
   workouts: Workout[];
   social: Social[];
   money: Money[];
