@@ -54,12 +54,10 @@ Open the site in Edge or Chrome and choose **Install app**. Or create a shortcut
 
 ## Your data
 
-- Everything is saved in your browser on that device.
+- Every change is saved on the device first, then synced to the server when you're signed in.
 - No personal data, keys or seed files belong in this repo, and `.gitignore` blocks backups, `.env` files and `*.local.*` files.
 - **Character → Profile & data → Back up** saves a JSON file. Keep it outside this folder.
 - **Restore** loads a backup on another device. It replaces that device's log.
-
-Syncing between devices needs a backend. That's a planned next step, using Postgres behind sign-in, with every row scoped to the signed-in user.
 
 ## Coach (optional)
 
