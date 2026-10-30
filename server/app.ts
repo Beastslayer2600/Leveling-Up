@@ -81,7 +81,7 @@ export async function authRoute(req: Request, d: Deps): Promise<Response> {
 
   if (b.action === "setup") {
     const owner = d.env.OWNER_EMAIL!.trim().toLowerCase();
-    if (email !== owner) return err(403, "This app belongs to someone else.");
+    if (email !== owner) return err(403, "That email doesn't match the owner email for this app. Check it for typos.");
     if (password.length < 10) return err(400, "Use at least 10 characters.");
     const existing = await d.sql.query(`select 1 from lu_users where email = $1`, [email]);
     if (existing.length) return err(409, "Account already exists. Sign in instead.");
