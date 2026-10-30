@@ -35,6 +35,23 @@ npm run build    # static site in dist/
 - **Windows (Chrome or Edge):** open the site, then choose **Install app** in the address bar.
 - **iPhone (Safari):** tap **Share**, then **Add to Home Screen**.
 
+## Sync and sign-in
+
+When the server has a database, the app asks you to sign in. Your log, journal and voice notes then sync between your devices.
+
+- **Vercel environment variables:**
+  - `DATABASE_URL`: Postgres. Neon, connected through Vercel's Storage tab, sets this for you.
+  - `AUTH_SECRET`: a long random string that signs the session cookie.
+  - `OWNER_EMAIL`: the only email allowed to create the account.
+  - `EVENT_TOKEN`: the bearer token other apps use to send XP events.
+  - `ANTHROPIC_API_KEY`: optional, and switches on the coach.
+- **Without `DATABASE_URL`:** the app keeps working on each device on its own.
+- **Testing locally:** `npm run dev` serves the same API from an in-memory Postgres.
+
+## On a Windows PC
+
+Open the site in Edge or Chrome and choose **Install app**. Or create a shortcut that runs `msedge.exe --app=<your site URL>`, which gives the app its own window and icon.
+
 ## Your data
 
 - Everything is saved in your browser on that device.
