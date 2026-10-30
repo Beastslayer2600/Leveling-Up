@@ -792,6 +792,20 @@ input[type="range"] { accent-color: var(--gold); width: 100%; }
 .lvup b { display: block; font-family: var(--f-display); font-weight: 700; font-size: 110px; line-height: 1; color: var(--gold-hi); text-shadow: 0 0 40px var(--gold-glow), 0 0 80px rgba(245, 185, 66, 0.3); }
 .lvup span { font-family: var(--f-display); font-weight: 700; font-size: 20px; letter-spacing: 0.3em; text-transform: uppercase; }
 
+/* ---------- sign-in ---------- */
+.auth { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 20px; background: radial-gradient(800px 500px at 50% 0%, rgba(245, 185, 66, 0.12), transparent 60%), rgba(6, 8, 13, 0.92); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fade 0.2s ease; }
+.auth-card { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 14px; padding: 26px 22px; border-radius: 22px; background: linear-gradient(180deg, #1a2032, #121726); border: 1px solid var(--line-2); box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8); animation: pop 0.25s var(--ease); }
+.auth-card .brand-mark { width: 46px; height: 46px; }
+.auth-card .kicker { margin: 0; color: var(--gold); }
+.auth-card h3 { margin: -6px 0 0; font-family: var(--f-display); font-weight: 700; font-size: 30px; letter-spacing: 0.06em; text-transform: uppercase; }
+.auth-err { margin: 0; min-height: 1.2em; color: var(--bad); font-size: 14px; }
+.auth-card .linkbtn { align-self: center; }
+.dot-live.local { background: var(--muted); box-shadow: none; }
+.dot-live.warn { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+.dot-live.busy { background: var(--c-clients); box-shadow: 0 0 8px var(--c-clients); animation: blink 1s ease-in-out infinite; }
+.mode small { color: var(--faint); margin-left: 15px; }
+@keyframes blink { 50% { opacity: 0.35; } }
+
 /* ---------- journal ---------- */
 .nudge {
   display: grid;

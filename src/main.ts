@@ -17,6 +17,7 @@ import type { Quest } from "./lib/leveling/types";
 import { $, ICON } from "./ui/dom";
 import { toast } from "./ui/fx";
 import { initJournal } from "./ui/journal";
+import { askCoach, initSync } from "./ui/sync";
 import { closeSheet, initSheets, openCommitMission, openEntry, openSheet } from "./ui/sheets";
 import { S, after, award, drop, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
 import { coachEnabled, render, renderNav } from "./ui/views";
@@ -94,53 +95,33 @@ $("clearDone").addEventListener("click", () => {
   toast(`Cleared ${ids.length} missions`);
 });
 
-/* ---------- coach (only when a coach endpoint is configured) ---------- */
+/* ---------- coach (server route; shown once you're signed in) ---------- */
 
-const COACH_LIMIT = 5;
-let coachCtl: AbortController | null = null;
-
-function coachUsedToday(): number {
-  try {
-    const raw = JSON.parse(localStorage.getItem("leveling-up.coach") || "{}");
-    return raw.day === dkey() ? raw.n || 0 : 0;
-  } catch {
-    return 0;
-  }
-}
+let coachBusy = false;
 
 $("c-go").addEventListener("click", async () => {
-  if (!coachEnabled()) return;
-  if (coachCtl) { coachCtl.abort(); return; }
+  if (!coachEnabled() || coachBusy) return;
   const status = $("c-status");
   status.hidden = false;
-  if (coachUsedToday() >= COACH_LIMIT) { status.textContent = `That's ${COACH_LIMIT} coach calls today. Try again tomorrow.`; return; }
   const focus = ($("c-focus") as HTMLInputElement).value.trim();
-  coachCtl = new AbortController();
-  $("c-go").textContent = "Stop";
+  coachBusy = true;
+  ($("c-go") as HTMLButtonElement).disabled = true;
   status.textContent = "Coach is reading your logs…";
   try {
-    const res = await fetch(import.meta.env.VITE_COACH_URL, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: buildPrompt(S.data, focus) }),
-      signal: coachCtl.signal,
-    });
-    if (res.status === 429) { status.textContent = "The coach is busy. Try again in a few minutes."; return; }
-    if (!res.ok) throw new Error(String(res.status));
-    const body = await res.json().catch(() => null);
-    const items = parseSuggestions(Array.isArray(body) ? body : body?.items ?? body?.text ?? "");
-    localStorage.setItem("leveling-up.coach", JSON.stringify({ day: dkey(), n: coachUsedToday() + 1 }));
+    const r = await askCoach(buildPrompt(S.data, focus));
+    if (r.status === 503) { status.textContent = "The coach isn't switched on yet. Add your Anthropic API key in Vercel."; return; }
+    if (!r.text) { status.textContent = r.error || "Couldn't reach the coach. Tap Unlock to try again."; return; }
+    const items = parseSuggestions(r.text);
     if (!items.length) { status.textContent = "The coach came back empty. Try again with a focus."; return; }
     S.data.coach = { items, at: Date.now(), focus };
     save();
     status.hidden = true;
     render();
-  } catch (e) {
-    status.textContent = (e as Error).name === "AbortError" ? "" : "Couldn't reach the coach. Tap Unlock to try again.";
-    status.hidden = (e as Error).name === "AbortError";
+  } catch {
+    status.textContent = "Couldn't reach the coach. Check your connection.";
   } finally {
-    coachCtl = null;
-    $("c-go").textContent = "Unlock";
+    coachBusy = false;
+    ($("c-go") as HTMLButtonElement).disabled = false;
   }
 });
 
@@ -262,6 +243,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) rend
 render();
 setTab(S.tab);
 after();
+void initSync();
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));

@@ -8,6 +8,7 @@ import { CAT, CATEGORY_BASE, CATS, PLAYER_BASE, levelOf, liveStreak, rankOf } fr
 import type { Quest } from "../lib/leveling/types";
 import { journaledOn } from "../lib/leveling/journal";
 import { renderJournal } from "./journal";
+import { renderMode, sync } from "./sync";
 import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, shortD, sumBy } from "./dom";
 import { S, VIEWS, type Tab } from "./state";
 
@@ -20,7 +21,7 @@ export const TAB_META: Record<Tab, { label: string; sub: string; fab: string }> 
   character: { label: "Character", sub: "Sheet and trophies", fab: "Add skill" },
 };
 
-export const coachEnabled = () => !!import.meta.env.VITE_COACH_URL;
+export const coachEnabled = () => sync.mode === "server";
 
 export function renderNav(): void {
   $("rail-nav").innerHTML = VIEWS.map(
@@ -56,7 +57,9 @@ export function render(): void {
   document.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
   VIEWS.forEach((v) => ($("v-" + v).hidden = S.tab !== v));
   $("fabLbl").textContent = TAB_META[S.tab].fab;
-  $("mode").innerHTML = `<span class="dot-live"></span>Saved on this device. Back up from Character.`;
+  if (sync.mode === "server") renderMode();
+  else $("mode").innerHTML = `<span class="dot-live local"></span>Saved on this device only. Sign in from Character to sync.`;
+  $("p-signin").hidden = sync.mode === "server";
 
   renderHudSide();
   ({ missions: renderMissions, journal: renderJournal, body: renderBody, social: renderSocial, money: renderMoney, character: renderCharacter })[S.tab]();

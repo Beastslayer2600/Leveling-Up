@@ -69,6 +69,8 @@ export function blankData(now = Date.now()): Data {
     coach: { items: [] },
     sheet: blankSheet(),
     release: blankRelease(),
+    tomb: {},
+    savedAt: 0,
   };
 }
 
@@ -88,5 +90,7 @@ export function normalize(raw: unknown): Data {
     coach: { items: [], ...(d.coach || {}) },
     sheet: { ...blankSheet(), ...(d.sheet || {}) },
     release: { ...blankRelease(), ...(d.release || {}) },
+    tomb: d.tomb && typeof d.tomb === "object" ? d.tomb : {},
+    savedAt: Number(d.savedAt) || 0,
   };
 }

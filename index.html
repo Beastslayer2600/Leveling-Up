@@ -309,6 +309,8 @@
         <p class="hint">Your name and a line about you brief the coach. Back up your log to a file you keep yourself, and restore it on another device.</p>
         <div class="acts">
           <button class="btn ghost" type="button" id="p-edit">Edit profile</button>
+          <button class="btn ghost" type="button" id="p-signin" hidden>Sign in to sync</button>
+          <button class="btn ghost" type="button" id="p-logout" hidden>Sign out</button>
           <button class="btn ghost" type="button" id="d-export"><span data-icon="download"></span>Back up</button>
           <button class="btn ghost" type="button" id="d-import"><span data-icon="upload"></span>Restore</button>
           <input type="file" id="d-file" accept="application/json,.json" hidden>
@@ -481,6 +483,21 @@
     <div class="fld"><label for="p-name">Player name</label><input class="in" id="p-name" maxlength="40" placeholder="Shown on your HUD"></div>
     <div class="fld"><label for="p-about">About you (optional)</label><textarea class="in" id="p-about" maxlength="400" placeholder="Work, season of life, what you're building. Only used to brief the coach."></textarea></div>
     <div class="acts"><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit">Save</button></div>
+  </form>
+</div>
+
+<div class="auth" id="auth" hidden>
+  <form class="auth-card" id="auth-form" autocomplete="on">
+    <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 2 28 9v14l-12 7L4 23V9z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 20l5-9 5 9M13 17h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+    <p class="kicker">Leveling Up</p>
+    <h3 id="auth-h">Sign in</h3>
+    <p class="hint" id="auth-sub"></p>
+    <div class="fld"><label for="auth-email">Email</label><input class="in" id="auth-email" type="email" autocomplete="username" required></div>
+    <div class="fld"><label for="auth-pass">Password</label><input class="in" id="auth-pass" type="password" autocomplete="current-password" minlength="10" required></div>
+    <div class="fld" id="auth-confirm-f" hidden><label for="auth-confirm">Confirm password</label><input class="in" id="auth-confirm" type="password" autocomplete="new-password"></div>
+    <p class="auth-err" id="auth-err" role="alert"></p>
+    <button class="btn primary" type="submit" id="auth-go">Sign in</button>
+    <button class="linkbtn" type="button" id="auth-skip">Keep using it on this device only</button>
   </form>
 </div>
 

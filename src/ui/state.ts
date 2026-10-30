@@ -39,12 +39,23 @@ let rerender = () => {};
 export const onRender = (f: () => void) => (rerender = f);
 export const render = () => rerender();
 
-export function save(): void {
+let afterSave = () => {};
+/** Sync registers here to push changes to the server. */
+export const onSave = (f: () => void) => (afterSave = f);
+
+/** Write the log to this device only (no push). */
+export function persistLocal(): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(S.data));
   } catch {
     toast("Couldn't save on this device. Storage may be full or blocked.");
   }
+}
+
+export function save(): void {
+  S.data.savedAt = Date.now();
+  persistLocal();
+  afterSave();
 }
 
 export function setTab(t: Tab): void {
@@ -75,6 +86,7 @@ export function put<K extends "quests" | "journal" | "workouts" | "social" | "mo
   obj: Data[K][number],
 ): void {
   const arr = S.data[coll] as Data[K][number][];
+  (obj as { u?: number }).u = Date.now();
   const i = arr.findIndex((x) => x.id === obj.id);
   if (i < 0) arr.push(obj);
   else arr[i] = obj;
@@ -83,6 +95,7 @@ export function put<K extends "quests" | "journal" | "workouts" | "social" | "mo
 
 export function drop(coll: "quests" | "journal" | "workouts" | "social" | "money" | "meals" | "days", id: string): void {
   (S.data[coll] as { id: string }[]) = (S.data[coll] as { id: string }[]).filter((x) => x.id !== id);
+  S.data.tomb = { ...S.data.tomb, [id]: Date.now() };
   save();
 }
 

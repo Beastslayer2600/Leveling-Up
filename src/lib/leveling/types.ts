@@ -219,6 +219,10 @@ export interface Data {
   coach: CoachState;
   sheet: Sheet;
   release: Release;
+  /** Deleted record id -> deletion time (ms), so a deletion survives a sync merge. */
+  tomb: Record<string, number>;
+  /** Last local save (ms). Decides which copy's stats and sheet win in a merge. */
+  savedAt: number;
 }
 
 /** What one XP change does. Applied by `applyAward`. */

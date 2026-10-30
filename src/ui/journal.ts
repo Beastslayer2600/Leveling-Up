@@ -4,6 +4,7 @@ import type { JournalEntry } from "../lib/leveling/types";
 import { $, ICON, dayBox, esc } from "./dom";
 import { toast } from "./fx";
 import { S, after, award, drop, newId, put, render } from "./state";
+import { deleteVoiceRemote, fetchVoice, queueVoice } from "./sync";
 import { canRecord, canTranscribe, delAudio, getAudio, putAudio, Recorder, Transcriber, type Recording } from "./voice";
 
 const BARS = 32;
@@ -141,6 +142,7 @@ async function saveEntry() {
     xp,
   };
   put("journal", e);
+  if (draft.rec) queueVoice(id);
   if (xp) award({ delta: xp, title: "Daily debrief", cat: "mind" });
   else toast("Entry saved");
   ($("j-text") as HTMLTextAreaElement).value = "";
@@ -198,7 +200,7 @@ async function hydrateAudio() {
   for (const el of document.querySelectorAll<HTMLAudioElement>("audio[data-audio]")) {
     const id = el.dataset.audio!;
     if (!urls.has(id)) {
-      const blob = await getAudio(id).catch(() => undefined);
+      const blob = (await getAudio(id).catch(() => undefined)) ?? (await fetchVoice(id));
       if (!blob) {
         el.replaceWith(Object.assign(document.createElement("span"), { className: "hint", textContent: "Voice note is on another device." }));
         continue;
@@ -259,7 +261,10 @@ export function saveJournalEdit(id: string): void {
 export function deleteJournal(id: string): void {
   const e = S.data.journal.find((x) => x.id === id);
   if (!e) return;
-  if (e.audio) void delAudio(id);
+  if (e.audio) {
+    void delAudio(id);
+    deleteVoiceRemote(id);
+  }
   const u = urls.get(id);
   if (u) { URL.revokeObjectURL(u); urls.delete(id); }
   if (e.xp) {

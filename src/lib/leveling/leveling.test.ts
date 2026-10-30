@@ -8,6 +8,7 @@ import { closed, eff, isDone, stepCounter, toggleQuest } from "./missions";
 import { e1rm, findNewPbs, parseSets, pbMap, workoutXp } from "./training";
 import { completeVirtue, rrState, todayVirtue, VIRTUES } from "./virtues";
 import { journalStreak, journalXp, todayPrompt } from "./journal";
+import { applyServerEvents, mergeData, pruneTombs } from "./sync";
 import { applyAward, blankStats, levelOf, liveStreak, rankOf } from "./xp";
 import type { Data, JournalEntry, Quest, Workout } from "./types";
 
@@ -344,5 +345,43 @@ describe("journal", () => {
     const d = blankData();
     d.journal.push(entry("2026-10-13", { text: "secret diary line" }));
     expect(buildPrompt(d, "", NOW)).not.toContain("secret diary line");
+  });
+});
+
+describe("sync merge", () => {
+  const q = (id: string, u: number, title = id): Quest => ({ id, u, title, cat: "side", kind: "quest", xp: 10, created: 0 } as Quest & { u: number });
+  it("unions records by id and keeps the later edit", () => {
+    const server = { ...blankData(), quests: [q("a", 1, "old a"), q("b", 5)], savedAt: 10 };
+    const local = { ...blankData(), quests: [q("a", 3, "new a"), q("c", 2)], savedAt: 20 };
+    const m = mergeData(server, local);
+    expect(m.quests.map((x) => x.title).sort()).toEqual(["b", "c", "new a"]);
+  });
+  it("keeps deletions from either side", () => {
+    const server = { ...blankData(), quests: [q("a", 1), q("b", 1)], savedAt: 10 };
+    const local = { ...blankData(), quests: [q("b", 1)], tomb: { a: 5 }, savedAt: 20 };
+    expect(mergeData(server, local).quests.map((x) => x.id)).toEqual(["b"]);
+  });
+  it("takes the newer stats but keeps every achievement and paid event", () => {
+    const server = blankData();
+    server.savedAt = 30;
+    server.stats = { ...server.stats, xp: 300, ach: { iron: 100 }, events: { k1: 1 } };
+    const local = blankData();
+    local.savedAt = 20;
+    local.stats = { ...local.stats, xp: 250, ach: { first: 50, iron: 90 }, events: { k2: 2 } };
+    const m = mergeData(server, local);
+    expect(m.stats.xp).toBe(300);
+    expect(m.stats.ach).toEqual({ iron: 90, first: 50 });
+    expect(Object.keys(m.stats.events).sort()).toEqual(["k1", "k2"]);
+  });
+  it("pays server events once", () => {
+    const d = blankData();
+    const evs = [{ key: "adjudicator:report:aaaaaaaa", type: "adjudication.report_submitted" }, { key: "x:y:zzzzzzzz", type: "made.up" }];
+    const r1 = applyServerEvents(d, evs, NOW);
+    expect(r1.xp).toBe(25);
+    expect(applyServerEvents(r1.data, evs, NOW).xp).toBe(0);
+  });
+  it("prunes old tombstones", () => {
+    const now = Date.UTC(2026, 9, 14);
+    expect(pruneTombs({ old: now - 200 * 864e5, fresh: now - 864e5 }, now)).toEqual({ fresh: now - 864e5 });
   });
 });
