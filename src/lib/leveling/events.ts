@@ -1,6 +1,6 @@
-import { stepCounter } from "./missions";
-import { applyAward, CAT, PLAYER_BASE, levelOf } from "./xp";
-import type { CatId, Data } from "./types";
+import { stepCounter } from "./missions.js";
+import { applyAward, CAT, PLAYER_BASE, levelOf } from "./xp.js";
+import type { CatId, Data } from "./types.js";
 
 /**
  * An activity event from another app (an adjudication report, a closed case…).

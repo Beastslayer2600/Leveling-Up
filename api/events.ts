@@ -1,5 +1,5 @@
-import { eventsRoute } from "../server/app";
-import { route } from "../server/deps";
+import { eventsRoute } from "../server/app.js";
+import { route } from "../server/deps.js";
 
 const handle = route(eventsRoute);
 export const GET = handle;

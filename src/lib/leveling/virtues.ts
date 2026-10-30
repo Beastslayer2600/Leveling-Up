@@ -1,5 +1,5 @@
-import { dayOfYear, dkey, yday } from "./dates";
-import type { Release, Stats } from "./types";
+import { dayOfYear, dkey, yday } from "./dates.js";
+import type { Release, Stats } from "./types.js";
 
 export interface Virtue {
   n: string;

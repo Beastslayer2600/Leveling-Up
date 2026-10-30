@@ -1,5 +1,5 @@
-import { authRoute } from "../server/app";
-import { route } from "../server/deps";
+import { authRoute } from "../server/app.js";
+import { route } from "../server/deps.js";
 
 const handle = route(authRoute);
 export const GET = handle;

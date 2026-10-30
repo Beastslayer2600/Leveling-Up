@@ -1,5 +1,5 @@
-import { curKey, dkey } from "./dates";
-import type { AwardSpec, Quest, Stats } from "./types";
+import { curKey, dkey } from "./dates.js";
+import type { AwardSpec, Quest, Stats } from "./types.js";
 
 /** Effective counter progress: 0 once the reset period has rolled over. */
 export function eff(q: Quest, now: Date = new Date()): number {

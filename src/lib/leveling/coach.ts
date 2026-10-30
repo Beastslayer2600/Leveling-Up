@@ -1,8 +1,8 @@
-import { daysAgoKey, daysSince } from "./dates";
-import { isDone } from "./missions";
-import { pbMap } from "./training";
-import { CAT, CATS, DIFF, PLAYER_BASE, levelOf, type DiffId } from "./xp";
-import type { Data, Kind, Period, Suggestion } from "./types";
+import { daysAgoKey, daysSince } from "./dates.js";
+import { isDone } from "./missions.js";
+import { pbMap } from "./training.js";
+import { CAT, CATS, DIFF, PLAYER_BASE, levelOf, type DiffId } from "./xp.js";
+import type { Data, Kind, Period, Suggestion } from "./types.js";
 
 const sum = <T>(a: T[], f: (x: T) => unknown) => a.reduce((s, x) => s + (Number(f(x)) || 0), 0);
 

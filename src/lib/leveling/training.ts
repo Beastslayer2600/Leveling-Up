@@ -1,4 +1,4 @@
-import type { Exercise, SetRec, Workout } from "./types";
+import type { Exercise, SetRec, Workout } from "./types.js";
 
 /** Parse "80x8, 80x8, 85x6" (or "80kg×8"); bare numbers are bodyweight reps. */
 export function parseSets(str: string): SetRec[] {

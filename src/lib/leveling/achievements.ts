@@ -1,6 +1,6 @@
-import { daysAgoKey, parseD } from "./dates";
-import { CATEGORY_BASE, CATS, PLAYER_BASE, levelOf } from "./xp";
-import type { Data } from "./types";
+import { daysAgoKey, parseD } from "./dates.js";
+import { CATEGORY_BASE, CATS, PLAYER_BASE, levelOf } from "./xp.js";
+import type { Data } from "./types.js";
 
 export interface Ctx {
   n: Record<string, number>;

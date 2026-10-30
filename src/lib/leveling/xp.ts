@@ -1,5 +1,5 @@
-import { dkey, yday } from "./dates";
-import type { AwardSpec, CatId, Stats } from "./types";
+import { dkey, yday } from "./dates.js";
+import type { AwardSpec, CatId, Stats } from "./types.js";
 
 export interface Category {
   id: CatId;

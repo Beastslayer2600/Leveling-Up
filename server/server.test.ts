@@ -1,7 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { beforeEach, describe, expect, it } from "vitest";
-import { authRoute, coachRoute, eventsRoute, stateRoute, voiceRoute, type Deps } from "./app";
-import { SCHEMA, type Sql } from "./db";
+import { authRoute, coachRoute, eventsRoute, stateRoute, voiceRoute, type Deps } from "./app.js";
+import { SCHEMA, type Sql } from "./db.js";
 
 const BASE = "https://lu.test";
 const env = { AUTH_SECRET: "test-secret-0123456789abcdef0123456789", OWNER_EMAIL: "Owner@Example.com", EVENT_TOKEN: "evt-token-abcdefghijklmnop" };

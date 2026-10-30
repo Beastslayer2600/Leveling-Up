@@ -1,6 +1,6 @@
-import { normalize } from "./data";
-import { applyEvent, EVENT_TYPES } from "./events";
-import type { Data, Stats } from "./types";
+import { normalize } from "./data.js";
+import { applyEvent, EVENT_TYPES } from "./events.js";
+import type { Data, Stats } from "./types.js";
 
 const COLLS = ["quests", "journal", "workouts", "social", "money", "meals", "days"] as const;
 

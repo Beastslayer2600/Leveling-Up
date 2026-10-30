@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { ACH, checkAchievements, freshAchievements } from "./achievements";
-import { buildPrompt, digest, parseSuggestions } from "./coach";
-import { blankData, normalize } from "./data";
-import { curKey, dkey, weekStart } from "./dates";
-import { applyEvent, EVENT_TYPES, type LevelEvent } from "./events";
-import { closed, eff, isDone, stepCounter, toggleQuest } from "./missions";
-import { e1rm, findNewPbs, parseSets, pbMap, workoutXp } from "./training";
-import { completeVirtue, rrState, todayVirtue, VIRTUES } from "./virtues";
-import { journalStreak, journalXp, todayPrompt } from "./journal";
-import { applyServerEvents, mergeData, pruneTombs } from "./sync";
-import { applyAward, blankStats, levelOf, liveStreak, rankOf } from "./xp";
-import type { Data, JournalEntry, Quest, Workout } from "./types";
+import { ACH, checkAchievements, freshAchievements } from "./achievements.js";
+import { buildPrompt, digest, parseSuggestions } from "./coach.js";
+import { blankData, normalize } from "./data.js";
+import { curKey, dkey, weekStart } from "./dates.js";
+import { applyEvent, EVENT_TYPES, type LevelEvent } from "./events.js";
+import { closed, eff, isDone, stepCounter, toggleQuest } from "./missions.js";
+import { e1rm, findNewPbs, parseSets, pbMap, workoutXp } from "./training.js";
+import { completeVirtue, rrState, todayVirtue, VIRTUES } from "./virtues.js";
+import { journalStreak, journalXp, todayPrompt } from "./journal.js";
+import { applyServerEvents, mergeData, pruneTombs } from "./sync.js";
+import { applyAward, blankStats, levelOf, liveStreak, rankOf } from "./xp.js";
+import type { Data, JournalEntry, Quest, Workout } from "./types.js";
 
 // Tuesday 13 Oct 2026, 10:00 local.
 const NOW = new Date(2026, 9, 13, 10, 0, 0);

@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { Deps } from "./app";
-import { getSql } from "./db";
+import type { Deps } from "./app.js";
+import { getSql } from "./db.js";
 
 let client: Anthropic | null = null;
 

@@ -1,6 +1,6 @@
-import { EVENT_TYPES } from "../src/lib/leveling/events";
-import { clearCookie, hashPassword, readSession, sameOrigin, sameToken, sessionCookie, signSession, verifyPassword } from "./auth";
-import type { Sql } from "./db";
+import { EVENT_TYPES } from "../src/lib/leveling/events.js";
+import { clearCookie, hashPassword, readSession, sameOrigin, sameToken, sessionCookie, signSession, verifyPassword } from "./auth.js";
+import type { Sql } from "./db.js";
 
 export interface Env {
   AUTH_SECRET?: string;

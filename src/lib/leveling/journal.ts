@@ -1,5 +1,5 @@
-import { dayOfYear, dkey } from "./dates";
-import type { JournalEntry } from "./types";
+import { dayOfYear, dkey } from "./dates.js";
+import type { JournalEntry } from "./types.js";
 
 /** The question the debrief asks. "How was your day?" leads; the rest rotate daily. */
 export const PROMPTS = [

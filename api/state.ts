@@ -1,5 +1,5 @@
-import { stateRoute } from "../server/app";
-import { route } from "../server/deps";
+import { stateRoute } from "../server/app.js";
+import { route } from "../server/deps.js";
 
 const handle = route(stateRoute);
 export const GET = handle;

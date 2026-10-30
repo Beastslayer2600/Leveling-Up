@@ -1,6 +1,6 @@
-import { blankRelease } from "./virtues";
-import { blankStats } from "./xp";
-import type { Data, Quest, Sheet } from "./types";
+import { blankRelease } from "./virtues.js";
+import { blankStats } from "./xp.js";
+import type { Data, Quest, Sheet } from "./types.js";
 
 export const OUT_CATS = [
   "Groceries",

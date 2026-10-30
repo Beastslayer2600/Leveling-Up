@@ -1,5 +1,5 @@
-import { voiceRoute } from "../server/app";
-import { route } from "../server/deps";
+import { voiceRoute } from "../server/app.js";
+import { route } from "../server/deps.js";
 
 const handle = route(voiceRoute);
 export const GET = handle;

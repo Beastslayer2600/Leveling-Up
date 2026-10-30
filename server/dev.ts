@@ -1,8 +1,8 @@
 /* Dev only: serve /api/* from the Vite dev server with an in-memory Postgres (PGlite).
    Data resets when the dev server restarts. Never imported by the production build. */
 import { randomBytes } from "node:crypto";
-import { authRoute, coachRoute, eventsRoute, stateRoute, voiceRoute, type Deps } from "./app";
-import { SCHEMA, type Sql } from "./db";
+import { authRoute, coachRoute, eventsRoute, stateRoute, voiceRoute, type Deps } from "./app.js";
+import { SCHEMA, type Sql } from "./db.js";
 
 const ROUTES: Record<string, (req: Request, d: Deps) => Promise<Response>> = {
   auth: authRoute,
@@ -27,7 +27,7 @@ function devDeps(): Promise<Deps> {
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     };
     let coach: Deps["coach"];
-    if (env.ANTHROPIC_API_KEY) coach = (await import("./deps")).coachCall;
+    if (env.ANTHROPIC_API_KEY) coach = (await import("./deps.js")).coachCall;
     else if (process.env.LU_FAKE_COACH)
       coach = async () =>
         JSON.stringify([
