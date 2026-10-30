@@ -14,3 +14,10 @@ leveling-up-backup-*.json
 
 # Local tooling
 .claude/
+
+.vercel
+.env*
+
+# Tooling added by the Vercel and Neon CLIs
+.agents/
+skills-lock.json
