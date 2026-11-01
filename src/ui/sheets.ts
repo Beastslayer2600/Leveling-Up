@@ -1,15 +1,17 @@
-import { IN_CATS, OUT_CATS, SOC } from "../lib/leveling/data";
+import { SOC } from "../lib/leveling/data";
+import { activeCats, catName, weightRange } from "../lib/leveling/prefs";
 import { dkey } from "../lib/leveling/dates";
 import { findNewPbs, fmtSets, parseSets, workoutXp } from "../lib/leveling/training";
 import { PLAN_Q, RB_STEPS } from "../lib/leveling/virtues";
-import { CATS, DIFF, type DiffId } from "../lib/leveling/xp";
+import { DIFF, type DiffId } from "../lib/leveling/xp";
 import type { Meal, Money, Quest, Social, SocialKind, Workout } from "../lib/leveling/types";
 import { $, esc, fmtN, radio, radioVal, setVal, val } from "./dom";
 import { toast } from "./fx";
+import { fillSetup, initSetup } from "./customize";
 import { deleteJournal, fillJournal, saveJournalEdit } from "./journal";
 import { S, after, award, drop, newId, put, render, save } from "./state";
 
-const FORMS = ["mission", "workout", "meal", "targets", "social", "money", "entry", "reach", "plan", "profile", "journal"] as const;
+const FORMS = ["mission", "workout", "meal", "targets", "social", "money", "entry", "reach", "plan", "profile", "journal", "setup"] as const;
 export type SheetName = (typeof FORMS)[number];
 
 type Item = { id: string } | null;
@@ -25,6 +27,7 @@ const FILL: Record<SheetName, (it: never) => void> = {
   plan: fillPlan,
   profile: fillProfile,
   journal: fillJournal,
+  setup: fillSetup,
 };
 
 let lastFocus: HTMLElement | null = null;
@@ -105,6 +108,7 @@ export function initSheets(): void {
   initEntry();
   initRelease();
   initProfile();
+  initSetup(() => openSheet("setup"), closeSheet);
   $("f-journal").addEventListener("submit", (e) => {
     e.preventDefault();
     if (S.editId) saveJournalEdit(S.editId);
@@ -128,12 +132,16 @@ function fillMission(q: Quest | null) {
   $("q-save").textContent = q ? "Save" : "Add mission";
   setVal("q-title", q?.title);
   setVal("q-note", q?.note);
-  setVal("q-cat", q ? q.cat : S.filter !== "all" ? S.filter : "clients");
+  const cats = activeCats(S.data.prefs);
+  // Keep an existing mission's category in the list even if it's switched off now.
+  const opts = q && !cats.some((c) => c.id === q.cat) ? [...cats, { id: q.cat }] : cats;
+  $("q-cat").innerHTML = opts.map((c) => `<option value="${c.id}">${esc(catName(S.data.prefs, c.id))}</option>`).join("");
+  setVal("q-cat", q ? q.cat : cats.some((c) => c.id === S.filter) ? S.filter : cats[0].id);
   setVal("q-kind", q ? q.kind : "quest");
   setVal("q-target", q?.target || 5);
   setVal("q-period", q?.period || "none");
   setVal("q-due", q?.due);
-  $<HTMLInputElement>("q-title").placeholder = "e.g. Annual review with a client";
+  $<HTMLInputElement>("q-title").placeholder = "e.g. Finish the first draft";
   radio("qdiff", (Object.keys(DIFF) as DiffId[]).find((k) => DIFF[k].xp === (q ? q.xp : 25)) || "std");
   syncQ();
 }
@@ -151,7 +159,6 @@ export function openCommitMission(): void {
 }
 
 function initMission() {
-  $("q-cat").innerHTML = CATS.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
   $("q-diff").innerHTML = (Object.entries(DIFF) as [DiffId, (typeof DIFF)[DiffId]][])
     .map(([k, v]) => `<input type="radio" name="qdiff" id="qd-${k}" value="${k}"><label for="qd-${k}">${v.label}<small>${v.xp}</small></label>`)
     .join("");
@@ -340,7 +347,7 @@ function saveDay(field: "steps" | "weight", v: number) {
   if (field === "weight" && (!prev || prev.weight == null)) xp += 5;
   d.xp = (prev?.xp || 0) + xp;
   put("days", d);
-  if (xp) award({ delta: xp, title: field === "steps" ? `${fmtN(v)} steps` : `Weigh-in ${v} kg`, cat: "training" });
+  if (xp) award({ delta: xp, title: field === "steps" ? `${fmtN(v)} steps` : `Weigh-in ${v} ${S.data.prefs.unit}`, cat: "training" });
   else toast("Updated");
   if (field === "steps" && v >= goal && xp >= 15) setTimeout(() => toast("Step goal smashed", "xp"), 900);
   render();
@@ -370,7 +377,8 @@ function initTargets() {
   });
   $("q-weight-save").addEventListener("click", () => {
     const v = Math.round(+val("q-weight") * 10) / 10;
-    if (!(v >= 20 && v <= 300)) return toast("Enter your weight in kg");
+    const [lo, hi] = weightRange(S.data.prefs.unit);
+    if (!(v >= lo && v <= hi)) return toast(`Enter your weight in ${S.data.prefs.unit}`);
     saveDay("weight", v);
     setVal("q-weight", "");
   });
@@ -433,7 +441,7 @@ function syncM() {
   $("m-verdictF").hidden = d !== "out";
   const sel = $<HTMLSelectElement>("m-cat");
   const cur = sel.value;
-  sel.innerHTML = (d === "out" ? OUT_CATS : IN_CATS).map((c) => `<option>${esc(c)}</option>`).join("");
+  sel.innerHTML = (d === "out" ? S.data.prefs.outCats : S.data.prefs.inCats).map((c) => `<option>${esc(c)}</option>`).join("");
   if ([...sel.options].some((o) => o.value === cur)) sel.value = cur;
 }
 
@@ -445,7 +453,12 @@ function fillMoney(m: Money | null) {
   setVal("m-amount", m?.amount);
   setVal("m-what", m?.what);
   setVal("m-date", m ? m.date : S.month === dkey().slice(0, 7) ? dkey() : S.month + "-01");
-  if (m?.cat) setVal("m-cat", m.cat);
+  if (m?.cat) {
+    const sel = $<HTMLSelectElement>("m-cat");
+    // An entry filed under a category you've since renamed or removed keeps it.
+    if (![...sel.options].some((o) => o.value === m.cat)) sel.insertAdjacentHTML("beforeend", `<option>${esc(m.cat)}</option>`);
+    setVal("m-cat", m.cat);
+  }
   radio("mverdict", m?.verdict || "neutral");
 }
 

@@ -24,6 +24,7 @@ async function tx<T>(mode: IDBTransactionMode, run: (s: IDBObjectStore) => IDBRe
 
 export const putAudio = (id: string, blob: Blob) => tx("readwrite", (s) => s.put(blob, id));
 export const getAudio = (id: string) => tx<Blob | undefined>("readonly", (s) => s.get(id));
+export const clearAudio = () => tx("readwrite", (s) => s.clear());
 export const delAudio = (id: string) => tx("readwrite", (s) => s.delete(id)).catch(() => undefined);
 
 export const canRecord = () =>

@@ -9,6 +9,7 @@ import "@fontsource/jetbrains-mono/latin-700.css";
 import "./styles.css";
 
 import { buildPrompt, parseSuggestions } from "./lib/leveling/coach";
+import { activeCats } from "./lib/leveling/prefs";
 import { normalize } from "./lib/leveling/data";
 import { dkey } from "./lib/leveling/dates";
 import { closed, stepCounter, toggleQuest } from "./lib/leveling/missions";
@@ -111,7 +112,7 @@ $("c-go").addEventListener("click", async () => {
     const r = await askCoach(buildPrompt(S.data, focus));
     if (r.status === 503) { status.textContent = "The coach isn't switched on yet. Add your Anthropic API key in Vercel."; return; }
     if (!r.text) { status.textContent = r.error || "Couldn't reach the coach. Tap Unlock to try again."; return; }
-    const items = parseSuggestions(r.text);
+    const items = parseSuggestions(r.text, activeCats(S.data.prefs).map((c) => c.id));
     if (!items.length) { status.textContent = "The coach came back empty. Try again with a focus."; return; }
     S.data.coach = { items, at: Date.now(), focus };
     save();
@@ -243,7 +244,10 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) rend
 render();
 setTab(S.tab);
 after();
-void initSync();
+// First run: once we know whose log this is, offer setup so the app fits this player.
+void initSync(() => {
+  if (!S.data.prefs.setup && !S.sheetName && $("auth").hidden) openSheet("setup");
+});
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));

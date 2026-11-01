@@ -1,19 +1,20 @@
-import { ACH } from "../lib/leveling/achievements";
+import { visibleAch } from "../lib/leveling/achievements";
+import { activeCats, catName } from "../lib/leveling/prefs";
 import { ATTRS, SOC, VERD } from "../lib/leveling/data";
 import { daysAgoKey, daysSince, dkey, parseD, weekStart, yday, zpad } from "../lib/leveling/dates";
 import { closed, eff, isDone, kindLabel } from "../lib/leveling/missions";
 import { e1rm, exSummary, pbMap } from "../lib/leveling/training";
 import { RR_DAYS, VIRTUES, rrState, todayVirtue } from "../lib/leveling/virtues";
-import { CAT, CATEGORY_BASE, CATS, PLAYER_BASE, levelOf, liveStreak, rankOf } from "../lib/leveling/xp";
+import { CAT, CATEGORY_BASE, PLAYER_BASE, levelOf, liveStreak, rankOf } from "../lib/leveling/xp";
 import type { Quest } from "../lib/leveling/types";
 import { journaledOn } from "../lib/leveling/journal";
 import { renderJournal } from "./journal";
 import { renderMode, sync } from "./sync";
-import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, shortD, sumBy } from "./dom";
-import { S, VIEWS, type Tab } from "./state";
+import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, setCurrency, shortD, sumBy } from "./dom";
+import { S, VIEWS, enabledViews, type Tab } from "./state";
 
 export const TAB_META: Record<Tab, { label: string; sub: string; fab: string }> = {
-  missions: { label: "Missions", sub: "Ops, quests, virtue", fab: "New mission" },
+  missions: { label: "Missions", sub: "Ops, quests, targets", fab: "New mission" },
   journal: { label: "Journal", sub: "Debrief and voice notes", fab: "Record" },
   body: { label: "Body", sub: "Training, fuel, steps", fab: "Log training" },
   social: { label: "Social", sub: "Posts and people", fab: "Log social" },
@@ -23,17 +24,36 @@ export const TAB_META: Record<Tab, { label: string; sub: string; fab: string }> 
 
 export const coachEnabled = () => sync.mode === "server";
 
+let navKey = "";
+
 export function renderNav(): void {
-  $("rail-nav").innerHTML = VIEWS.map(
+  const views = enabledViews();
+  navKey = views.join();
+  $("rail-nav").innerHTML = views.map(
     (v) =>
       `<button class="navi" type="button" role="tab" data-tab="${v}" aria-selected="${S.tab === v}">${ICON[v]}<span><b>${TAB_META[v].label}</b><small>${TAB_META[v].sub}</small></span></button>`,
   ).join("");
-  $("tabbar").innerHTML = VIEWS.map(
+  $("tabbar").innerHTML = views.map(
     (v) => `<button class="tab" type="button" role="tab" data-tab="${v}" aria-selected="${S.tab === v}">${ICON[v]}<span>${TAB_META[v].label}</span></button>`,
   ).join("");
 }
 
+const cn = (id: string) => catName(S.data.prefs, id);
+
+/** Apply the player's settings: currency, units, and which tabs show. */
+function applyPrefs(): void {
+  const p = S.data.prefs;
+  setCurrency(p.currency);
+  document.querySelectorAll(".cur").forEach((el) => (el.textContent = p.currency));
+  document.querySelectorAll(".unit").forEach((el) => (el.textContent = p.unit));
+  $<HTMLInputElement>("q-weight").placeholder = p.unit;
+  const views = enabledViews();
+  if (!views.includes(S.tab)) S.tab = "missions";
+  if (views.join() !== navKey) renderNav();
+}
+
 export function render(): void {
+  applyPrefs();
   const st = S.data.stats;
   const L = levelOf(st.xp, PLAYER_BASE);
   const t = dkey();
@@ -52,7 +72,8 @@ export function render(): void {
   ring.style.strokeDashoffset = `${circ * (1 - L.into / L.need)}`;
   $("streak").textContent = liveStreak(st) + "d";
   $("today").textContent = "+" + (st.dayKey === t ? st.dayXp : 0);
-  $("achn").textContent = `${Object.keys(st.ach).filter((k) => ACH.some((a) => a.id === k)).length}/${ACH.length}`;
+  const ach = visibleAch(S.data.prefs);
+  $("achn").textContent = `${ach.filter((a) => st.ach[a.id]).length}/${ach.length}`;
 
   document.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
   VIEWS.forEach((v) => ($("v-" + v).hidden = S.tab !== v));
@@ -79,9 +100,9 @@ function logRows(): string {
 
 function renderHudSide(): void {
   const st = S.data.stats;
-  $("hud-cats").innerHTML = CATS.map((c) => {
+  $("hud-cats").innerHTML = activeCats(S.data.prefs).map((c) => {
     const L = levelOf(st.cat[c.id] || 0, CATEGORY_BASE);
-    return `<div class="cl" style="--cc:var(${c.v})"><span class="cl-n"><i></i>${c.name}</span><span class="cl-lv">LV${L.level}</span><div class="meter thin"><i style="width:${pct(L.into, L.need)}%"></i></div></div>`;
+    return `<div class="cl" style="--cc:var(${c.v})"><span class="cl-n"><i></i>${esc(cn(c.id))}</span><span class="cl-lv">LV${L.level}</span><div class="meter thin"><i style="width:${pct(L.into, L.need)}%"></i></div></div>`;
   }).join("");
   const rows = logRows();
   $("hud-log").innerHTML = rows || `<p class="empty-s">Earn XP and it shows up here.</p>`;
@@ -91,9 +112,8 @@ function renderHudSide(): void {
 
 function card(q: Quest): string {
   const done = isDone(q);
-  const c = CAT[q.cat] || CAT.side;
   const id = esc(q.id);
-  const meta = `<div class="meta"><span class="cat">${esc(c.name)}</span><span>${kindLabel(q)}</span>${dueBit(q)}${q.starter ? '<span class="tag">Starter</span>' : ""}${q.coach ? '<span class="tag">Coach</span>' : ""}</div>`;
+  const meta = `<div class="meta"><span class="cat">${esc(cn(CAT[q.cat] ? q.cat : "side"))}</span><span>${kindLabel(q)}</span>${dueBit(q)}${q.starter ? '<span class="tag">Starter</span>' : ""}${q.coach ? '<span class="tag">Coach</span>' : ""}</div>`;
   const body = `<button class="q-body" type="button" data-act="edit-q" data-id="${id}"><div class="q-title">${esc(q.title)}</div>${q.note ? `<div class="q-note">${esc(q.note)}</div>` : ""}${meta}</button>`;
   let left: string;
   let extra = "";
@@ -119,6 +139,9 @@ function dueBit(q: Quest): string {
 
 function renderMissions(): void {
   const { stats: st, quests } = S.data;
+  const mods = S.data.prefs.modules;
+  $("faith-duo").hidden = !mods.faith;
+  $("j-nudge").hidden = !mods.journal || journaledOn(S.data.journal);
   const vs = st.virtue;
   const doneV = vs.last === dkey();
   const v = todayVirtue(new Date(), S.vSwap);
@@ -134,14 +157,13 @@ function renderMissions(): void {
   $("v-streak").textContent =
     `${vs.count || 0} done` + ((vs.last === dkey() || vs.last === yday()) && (vs.streak || 0) > 1 ? ` · ${vs.streak}d run` : "");
   renderRelease();
-  $("j-nudge").hidden = journaledOn(S.data.journal);
 
   const counts: Record<string, number> = {};
   quests.forEach((q) => { if (!isDone(q)) counts[q.cat] = (counts[q.cat] || 0) + 1; });
   let ch = `<button class="chip" type="button" data-act="filter" data-cat="all" aria-pressed="${S.filter === "all"}"><span class="dot"></span>All</button>`;
-  for (const c of CATS) {
+  for (const c of activeCats(S.data.prefs)) {
     const lv = levelOf(st.cat[c.id] || 0, CATEGORY_BASE).level;
-    ch += `<button class="chip" type="button" data-act="filter" data-cat="${c.id}" style="--cc:var(${c.v})" aria-pressed="${S.filter === c.id}"><span class="dot"></span>${c.name}<span class="lv">LV${lv}${counts[c.id] ? " · " + counts[c.id] : ""}</span></button>`;
+    ch += `<button class="chip" type="button" data-act="filter" data-cat="${c.id}" style="--cc:var(${c.v})" aria-pressed="${S.filter === c.id}"><span class="dot"></span>${esc(cn(c.id))}<span class="lv">LV${lv}${counts[c.id] ? " · " + counts[c.id] : ""}</span></button>`;
   }
   $("chips").innerHTML = ch;
 
@@ -149,7 +171,7 @@ function renderMissions(): void {
   $("c-list").innerHTML = S.data.coach.items
     .map(
       (s, i) =>
-        `<div class="sug" style="--cc:${cvar(s.cat)}"><div class="sug-b"><div class="q-title">${esc(s.title)}</div>${s.why ? `<div class="q-note">${esc(s.why)}</div>` : ""}<div class="meta"><span class="cat">${esc((CAT[s.cat] || CAT.mind).name)}</span><span>${s.kind === "daily" ? "Daily" : s.kind === "counter" ? `${s.target}× ${s.period === "week" ? "weekly" : s.period === "month" ? "monthly" : "total"}` : "Quest"}</span><span class="gold">+${s.xp} XP</span></div></div><div class="sug-acts"><button class="mini go" type="button" data-act="c-accept" data-i="${i}">Accept</button><button class="mini" type="button" data-act="c-skip" data-i="${i}">Skip</button></div></div>`,
+        `<div class="sug" style="--cc:${cvar(s.cat)}"><div class="sug-b"><div class="q-title">${esc(s.title)}</div>${s.why ? `<div class="q-note">${esc(s.why)}</div>` : ""}<div class="meta"><span class="cat">${esc(cn(CAT[s.cat] ? s.cat : "mind"))}</span><span>${s.kind === "daily" ? "Daily" : s.kind === "counter" ? `${s.target}× ${s.period === "week" ? "weekly" : s.period === "month" ? "monthly" : "total"}` : "Quest"}</span><span class="gold">+${s.xp} XP</span></div></div><div class="sug-acts"><button class="mini go" type="button" data-act="c-accept" data-i="${i}">Accept</button><button class="mini" type="button" data-act="c-skip" data-i="${i}">Skip</button></div></div>`,
     )
     .join("");
 
@@ -169,7 +191,7 @@ function renderMissions(): void {
   $("dailyCount").innerHTML = daily.length ? `<b class="gold">${dd}/${daily.length}</b> · resets at midnight` : "Resets at midnight";
   $("active").innerHTML = active.length
     ? active.map(card).join("")
-    : empty(none ? "Quests and tracked targets land here: client meetings, adjudication bookings, side projects." : "No active quests here. Add one with New mission.");
+    : empty(none ? "Quests and tracked targets land here: one-off jobs, goals with a deadline, side projects." : "No active quests here. Add one with New mission.");
   $("activeCount").textContent = active.length ? `${active.length} open` : "";
   $("doneSec").hidden = !done.length;
   $("done").innerHTML = done.slice(0, 15).map(card).join("");
@@ -215,8 +237,8 @@ function renderBody(): void {
   const ws = days.filter((d) => d.weight).sort((a, b) => a.date.localeCompare(b.date));
   const lastW = ws[ws.length - 1];
   $("b-weight").innerHTML = lastW
-    ? `${(+lastW.weight!).toFixed(1)} <small>kg${lastW.date !== t ? " · " + shortD(lastW.date) : ""}</small>`
-    : "— <small>kg</small>";
+    ? `${(+lastW.weight!).toFixed(1)} <small>${S.data.prefs.unit}${lastW.date !== t ? " · " + shortD(lastW.date) : ""}</small>`
+    : `— <small>${S.data.prefs.unit}</small>`;
 
   const mealsT = meals.filter((m) => m.date === t).sort((a, b) => a.created - b.created);
   const kcal = sumBy(mealsT, (m) => m.kcal);
@@ -259,13 +281,14 @@ function renderBody(): void {
   $("t-gym").textContent = String(wk.filter((w) => w.type === "gym").length);
   $("t-cardio").innerHTML = `${sumBy(wk.filter((w) => w.type === "cardio"), (w) => w.mins)}<small> min</small>`;
   $("t-lv").textContent = "LV" + levelOf(S.data.stats.cat.training || 0, CATEGORY_BASE).level;
+  const u = S.data.prefs.unit;
   const pbs = Object.values(pbMap(workouts)).sort((a, b) => b.date.localeCompare(a.date));
   $("t-pbcount").textContent = pbs.length ? `${pbs.length} lifts` : "";
   $("t-pbs").innerHTML = pbs.length
     ? pbs
         .map(
           (p) =>
-            `<div class="pb"><span>${esc(p.name)}</span><b>${p.best.kg ? `${p.best.kg}<em>kg × ${p.best.reps}</em>` : `${p.best.reps}<em> reps</em>`}</b><small>${p.best.kg ? `est. 1RM ${e1rm(p.best)}kg · ` : ""}${shortD(p.date)}</small></div>`,
+            `<div class="pb"><span>${esc(p.name)}</span><b>${p.best.kg ? `${p.best.kg}<em>${u} × ${p.best.reps}</em>` : `${p.best.reps}<em> reps</em>`}</b><small>${p.best.kg ? `est. 1RM ${e1rm(p.best)}${u} · ` : ""}${shortD(p.date)}</small></div>`,
         )
         .join("")
     : empty("Log a gym session and your best set for each lift shows up here. Beat it for a PB bonus.", ' style="grid-column:1/-1"');
@@ -315,7 +338,7 @@ function renderWeightChart(all: { date: string; w: number }[], goalW: number | n
   svg += `<text x="${pl}" y="${H - 5}">${shortD(pts[0].date)}</text><text x="${W - pr}" y="${H - 5}" text-anchor="end">${shortD(last.date)}</text></svg>`;
   $("b-wchart").innerHTML = svg;
   const dl = last.w - pts[0].w;
-  $("b-wdelta").textContent = `${dl >= 0 ? "+" : "−"}${Math.abs(dl).toFixed(1)} kg since ${shortD(pts[0].date)}`;
+  $("b-wdelta").textContent = `${dl >= 0 ? "+" : "−"}${Math.abs(dl).toFixed(1)} ${S.data.prefs.unit} since ${shortD(pts[0].date)}`;
 }
 
 /* ---------- social ---------- */
@@ -359,7 +382,7 @@ function renderSocial(): void {
             `<button class="row-i" type="button" data-act="edit-s" data-id="${esc(s.id)}" style="--cc:var(--c-social)">${dayBox(s.date)}<span class="t"><div>${esc(s.what)}</div><div>${esc([s.group, s.eng != null ? `${s.eng} engagement` : "", s.note].filter(Boolean).join(" · "))}</div></span><span class="v"><small class="cc">${SOC[s.kind].label}</small></span></button>`,
         )
         .join("")
-    : empty("Nothing logged yet. Log posts, coffees, braais and networking events to grow your social level.");
+    : empty("Nothing logged yet. Log posts, coffees, dinners and networking events to grow your social level.");
 }
 
 /* ---------- money ---------- */
@@ -410,7 +433,8 @@ function renderMoney(): void {
 
 function renderCharacter(): void {
   const { stats: st, sheet: sh } = S.data;
-  $("ch-attrs").innerHTML = ATTRS.map((a) => {
+  const off = S.data.prefs.catOff;
+  $("ch-attrs").innerHTML = ATTRS.filter((a) => a.cats.some((c) => !off.includes(c as never))).map((a) => {
     const L = levelOf(sumBy(a.cats, (c) => st.cat[c]), CATEGORY_BASE);
     return `<div class="attr" style="--cc:var(${a.v})"><span>${a.name}</span><div class="meter"><i style="width:${pct(L.into, L.need)}%"></i></div><b>LV${L.level}</b></div>`;
   }).join("");
@@ -431,7 +455,9 @@ function renderCharacter(): void {
         .map((f) => `<button class="feat" type="button" data-act="edit-e" data-type="feat" data-id="${esc(f.id)}"><span class="gem" aria-hidden="true"></span><span class="feat-t"><b>${esc(f.title)}</b>${f.detail ? `<small>${esc(f.detail)}</small>` : ""}</span></button>`)
         .join("")
     : empty("Rare feats and niche abilities that make you, you.", ' style="grid-column:1/-1"');
+  $("p-where").textContent = sync.mode === "server" ? "Synced to your account" : "Stays on this device";
   const got = st.ach;
+  const ACH = visibleAch(S.data.prefs).map((a) => (a.cat ? { ...a, d: a.d.replace("{cat}", cn(a.cat)) } : a));
   const n = ACH.filter((a) => got[a.id]).length;
   $("ch-achn").innerHTML = `<b class="gold">${n}</b> / ${ACH.length} unlocked`;
   const ord = [...ACH].sort((a, b) => (got[b.id] ? 1 : 0) - (got[a.id] ? 1 : 0) || (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0));

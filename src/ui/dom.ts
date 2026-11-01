@@ -9,9 +9,12 @@ export const esc = (s: unknown) =>
 export const cvar = (cat: string) => `var(${(CAT[cat] || CAT.side).v})`;
 
 export const fmtN = (n: number) => Math.round(n).toLocaleString("en-ZA").replace(/[, ]/g, " ");
-export const rands = (n: number) => "R" + fmtN(Math.abs(n));
+let currency = "R";
+/** The player's currency symbol (render() keeps it current). */
+export const setCurrency = (sym: string) => (currency = sym);
+export const rands = (n: number) => currency + fmtN(Math.abs(n));
 export const rands2 = (n: number) =>
-  "R" + Math.abs(n).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  currency + Math.abs(n).toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const shortD = (s: string) => parseD(s).toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
 export const dayBox = (s: string) => {
   const d = parseD(s);

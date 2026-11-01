@@ -1,5 +1,6 @@
 // Offline shell: pages are network-first (fresh when online), assets cache-first.
-const CACHE = "leveling-up-v1";
+// v2: earlier builds cached /api/* responses; bumping the name clears them.
+const CACHE = "leveling-up-v2";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", (e) => {
@@ -14,12 +15,18 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;
-  if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== "GET" || url.origin !== location.origin) return;
+  // The API is live data (sign-in, sync, events): never answer it from the cache.
+  if (url.pathname.startsWith("/api/")) return;
   if (req.mode === "navigate") {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          caches.open(CACHE).then((c) => c.put("./index.html", res.clone()));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put("./index.html", copy));
+          }
           return res;
         })
         .catch(() => caches.match("./index.html")),

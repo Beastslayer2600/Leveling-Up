@@ -24,6 +24,7 @@ export async function deps(): Promise<Deps> {
     AUTH_SECRET: process.env.AUTH_SECRET,
     OWNER_EMAIL: process.env.OWNER_EMAIL,
     EVENT_TOKEN: process.env.EVENT_TOKEN,
+    INVITE_CODE: process.env.INVITE_CODE,
     ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   };
   return { sql: await getSql(), env, coach: env.ANTHROPIC_API_KEY ? coachCall : undefined };

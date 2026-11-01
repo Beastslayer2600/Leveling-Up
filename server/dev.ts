@@ -24,6 +24,7 @@ function devDeps(): Promise<Deps> {
       AUTH_SECRET: process.env.AUTH_SECRET || randomBytes(32).toString("hex"),
       OWNER_EMAIL: process.env.OWNER_EMAIL || "dev@leveling.local",
       EVENT_TOKEN: process.env.EVENT_TOKEN || "dev-event-token-123456",
+      INVITE_CODE: process.env.INVITE_CODE,
       ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
     };
     let coach: Deps["coach"];
