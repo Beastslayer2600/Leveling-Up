@@ -119,6 +119,14 @@ describe("events", () => {
     const list = await (await eventsRoute(req("/api/events", { cookie: c }), d)).json();
     expect(list.events).toEqual([{ key: ev.key, type: ev.type, occurred_on: "2026-10-14" }]);
   });
+  it("falls back to today for an impossible date instead of failing", async () => {
+    const d = await freshDeps();
+    const c = await signedIn(d);
+    const r = await send(d, { type: "advisor.meeting_held", key: "advisor:meeting:baddate01", date: "2026-02-30" });
+    expect(r.status).toBe(200);
+    const list = await (await eventsRoute(req("/api/events", { cookie: c }), d)).json();
+    expect(list.events[0].occurred_on).toBe(new Date().toISOString().slice(0, 10));
+  });
   it("waits for the account to exist", async () => {
     const d = await freshDeps();
     expect((await send(d, { type: "advisor.meeting_held", key: "advisor:meeting:abcdef123" })).status).toBe(409);

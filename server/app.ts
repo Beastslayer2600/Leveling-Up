@@ -42,6 +42,8 @@ async function limited(sql: Sql, bucket: string, max: number, windowMins: number
   );
   if ((rows[0]?.n ?? 0) >= max) return true;
   await sql.query(`insert into lu_hits (bucket) values ($1)`, [bucket]);
+  // Every limit window is a day or less, so older hits can go. Runs on ~1 in 20 hits.
+  if (Math.random() < 0.05) await sql.query(`delete from lu_hits where at < now() - interval '2 days'`);
   return false;
 }
 
@@ -171,6 +173,14 @@ export async function voiceRoute(req: Request, d: Deps): Promise<Response> {
 
 /* ---------- /api/events ---------- */
 
+/** A real calendar date as YYYY-MM-DD, or null (so "2026-02-30" can't reach the ::date cast). */
+function validDate(v: unknown): string | null {
+  const s = String(v ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  const t = new Date(s + "T00:00:00Z");
+  return !isNaN(t.getTime()) && t.toISOString().slice(0, 10) === s ? s : null;
+}
+
 /**
  * POST (Bearer EVENT_TOKEN): another app reports an activity. Only the event type,
  * a date and an opaque key are accepted; XP comes from the server's own table.
@@ -197,7 +207,7 @@ export async function eventsRoute(req: Request, d: Deps): Promise<Response> {
   const key = String(b?.key || "");
   if (!(type in EVENT_TYPES)) return err(400, "Unknown event type");
   if (!/^[a-zA-Z0-9:._-]{8,160}$/.test(key)) return err(400, "Bad idempotency key");
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(b?.date)) ? String(b!.date) : new Date().toISOString().slice(0, 10);
+  const date = validDate(b?.date) ?? new Date().toISOString().slice(0, 10);
 
   const owner = d.env.OWNER_EMAIL ? ownerIdFor(d.env.OWNER_EMAIL) : "";
   const users = await d.sql.query(`select 1 from lu_users where id = $1`, [owner]);

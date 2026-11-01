@@ -61,12 +61,9 @@ Open the site in Edge or Chrome and choose **Install app**. Or create a shortcut
 
 ## Coach (optional)
 
-The coach is hidden unless `VITE_COACH_URL` points to an endpoint that:
+The coach shows on the Missions tab once you're signed in. It runs on the server (`/api/coach`) and needs `ANTHROPIC_API_KEY` in Vercel. The key stays on the server, never in the app.
 
-- takes `POST { prompt }`
-- returns a JSON array of mission suggestions
-
-The API key belongs on that server, never in this app. The app builds its prompt from your own profile (`src/lib/leveling/coach.ts`). It never sends your release plan, and it limits itself to 5 calls a day.
+The app builds its prompt from your own profile and recent logs (`src/lib/leveling/coach.ts`). It never sends your release plan. The server allows 5 coach calls a day.
 
 ## Integrations
 
