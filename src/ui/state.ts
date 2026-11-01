@@ -1,12 +1,17 @@
 import { ACH_BY, ACHIEVEMENT_XP, checkAchievements, freshAchievements } from "../lib/leveling/achievements";
 import { blankData, normalize } from "../lib/leveling/data";
 import { dkey } from "../lib/leveling/dates";
+import { catName } from "../lib/leveling/prefs";
 import { applyAward, CAT } from "../lib/leveling/xp";
 import type { AwardSpec, Data } from "../lib/leveling/types";
 import { levelUp, toast, toastAch } from "./fx";
 
 export type Tab = "missions" | "journal" | "body" | "social" | "money" | "character";
 export const VIEWS: Tab[] = ["missions", "journal", "body", "social", "money", "character"];
+
+/** Tabs this player has switched on. Missions and Character are always there. */
+export const enabledViews = (): Tab[] =>
+  VIEWS.filter((v) => v === "missions" || v === "character" || S.data.prefs.modules[v]);
 
 const KEY = "leveling-up.v1";
 const TAB_KEY = "leveling-up.tab";
@@ -108,7 +113,7 @@ export function award(spec: AwardSpec): void {
   S.data.stats = r.stats;
   save();
   if (!spec.quiet && spec.delta)
-    toast(`${spec.delta > 0 ? "+" : ""}${spec.delta} XP · ${CAT[spec.cat]?.name ?? spec.title}`, spec.delta > 0 ? "xp" : "");
+    toast(`${spec.delta > 0 ? "+" : ""}${spec.delta} XP · ${CAT[spec.cat] ? catName(S.data.prefs, spec.cat) : spec.title}`, spec.delta > 0 ? "xp" : "");
   if (r.levelAfter > r.levelBefore) setTimeout(() => levelUp(r.levelAfter), 500);
   const fresh = freshAchievements(r.events, S.data.stats.ach);
   if (fresh.length) setTimeout(() => grant(fresh), 1300);

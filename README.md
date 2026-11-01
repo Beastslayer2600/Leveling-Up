@@ -2,6 +2,8 @@
 
 A game-style life tracker with a dark "night ops" HUD. Missions earn XP and levels, and the app also tracks a daily Bible virtue, body and gym, social life, a money ledger with good and bad calls, a character sheet and 36 achievements.
 
+Anyone can make it their own: on first run (and any time from **Character → Customize**) each player picks their currency, kg or lb, which modules to show (Faith, Journal, Body, Social, Money), and renames or switches off mission categories. Settings sync with the rest of the log.
+
 It's an installable web app (PWA) that works offline. It runs on a laptop and on a phone.
 
 ## Tabs
@@ -37,12 +39,13 @@ npm run build    # static site in dist/
 
 ## Sync and sign-in
 
-When the server has a database, the app asks you to sign in. Your log, journal and voice notes then sync between your devices.
+When the server has a database, the app asks you to sign in or create an account. Anyone can sign up, and each account has its own log, journal and voice notes, synced between that person's devices. Signing out clears the log from that device, so people can share a phone or laptop.
 
 - **Vercel environment variables:**
   - `DATABASE_URL`: Postgres. Neon, connected through Vercel's Storage tab, sets this for you.
   - `AUTH_SECRET`: a long random string that signs the session cookie.
-  - `OWNER_EMAIL`: the only email allowed to create the account.
+  - `OWNER_EMAIL`: optional. Your own account's email: XP events from other apps go to it, and it can always sign up even when an invite code is set.
+  - `INVITE_CODE`: optional. When set, new accounts need this code to sign up. Leave it unset to let anyone sign up.
   - `EVENT_TOKEN`: the bearer token other apps use to send XP events.
   - `ANTHROPIC_API_KEY`: optional, and switches on the coach.
 - **Without `DATABASE_URL`:** the app keeps working on each device on its own.

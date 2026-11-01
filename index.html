@@ -79,7 +79,7 @@
         <span class="nudge-go" data-icon="chevR"></span>
       </button>
 
-      <div class="duo">
+      <div class="duo" id="faith-duo">
         <section class="panel virtue" aria-label="Daily virtue">
           <div class="sec-h"><span class="eyebrow"><span data-icon="cross"></span>Daily virtue</span><span id="v-streak"></span></div>
           <div><h3 id="v-name">Patience</h3><div class="ref" id="v-ref"></div></div>
@@ -105,7 +105,7 @@
 
       <section class="panel coach" id="coach" hidden>
         <div class="sec-h"><h2><span data-icon="spark"></span>Coach</h2><span>Unlocks missions from your logs</span></div>
-        <p>Tell the coach what to work on, or leave it blank and it reads your body, social, money and faith logs.</p>
+        <p>Tell the coach what to work on, or leave it blank and it reads your logs.</p>
         <div class="coach-row">
           <input class="in" id="c-focus" maxlength="140" placeholder="e.g. patience, eat proper meals, learn Excel">
           <button class="btn primary" type="button" id="c-go">Unlock</button>
@@ -194,7 +194,7 @@
               <div class="qin"><input class="in" id="q-steps" type="number" min="0" max="100000" inputmode="numeric" placeholder="Steps" aria-label="Steps today"><button class="mini go" type="button" id="q-steps-save">Save</button></div></div>
             <div class="qbox"><span>Weight</span><b id="b-weight">—</b>
               <div class="meter ghost"><i></i></div>
-              <div class="qin"><input class="in" id="q-weight" type="number" min="20" max="300" step="0.1" inputmode="decimal" placeholder="kg" aria-label="Weight today in kg"><button class="mini go" type="button" id="q-weight-save">Save</button></div></div>
+              <div class="qin"><input class="in" id="q-weight" type="number" min="20" max="300" step="0.1" inputmode="decimal" placeholder="kg" aria-label="Weight today"><button class="mini go" type="button" id="q-weight-save">Save</button></div></div>
           </div>
         </section>
         <section class="panel">
@@ -305,10 +305,11 @@
         <div class="achs" id="ch-achs"></div>
       </section>
       <section class="panel">
-        <div class="sec-h"><h2>Profile &amp; data</h2><span>Stays on this device</span></div>
-        <p class="hint">Your name and a line about you brief the coach. Back up your log to a file you keep yourself, and restore it on another device.</p>
+        <div class="sec-h"><h2>Profile &amp; data</h2><span id="p-where">Stays on this device</span></div>
+        <p class="hint">Your name and a line about you brief the coach. Customize sets your currency, units, what you track and your mission categories. Back up your log to a file you keep yourself, and restore it on another device.</p>
         <div class="acts">
           <button class="btn ghost" type="button" id="p-edit">Edit profile</button>
+          <button class="btn ghost" type="button" id="p-custom">Customize</button>
           <button class="btn ghost" type="button" id="p-signin" hidden>Sign in to sync</button>
           <button class="btn ghost" type="button" id="p-logout" hidden>Sign out</button>
           <button class="btn ghost" type="button" id="d-export"><span data-icon="download"></span>Back up</button>
@@ -360,7 +361,7 @@
     </div>
     <div class="fld" id="w-exF">
       <label>Exercises</label>
-      <div class="hint">Sets as kg×reps, comma separated: 80x8, 80x8, 85x6. Bodyweight: just reps, like 12, 10, 8.</div>
+      <div class="hint">Sets as <span class="unit">kg</span>×reps, comma separated: 80x8, 80x8, 85x6. Bodyweight: just reps, like 12, 10, 8.</div>
       <div class="list" id="w-ex"></div>
       <button class="btn ghost" type="button" id="w-add"><span data-icon="plus"></span>Add exercise</button>
     </div>
@@ -399,7 +400,7 @@
     <div class="row3">
       <div class="fld"><label for="g-steps">Steps / day</label><input class="in" id="g-steps" type="number" min="1000" max="50000" step="500" inputmode="numeric"></div>
       <div class="fld"><label for="g-kcal">kcal / day</label><input class="in" id="g-kcal" type="number" min="0" max="8000" step="50" inputmode="numeric" placeholder="Optional"></div>
-      <div class="fld"><label for="g-weight">Goal kg</label><input class="in" id="g-weight" type="number" min="30" max="250" step="0.5" inputmode="decimal" placeholder="Optional"></div>
+      <div class="fld"><label for="g-weight">Goal <span class="unit">kg</span></label><input class="in" id="g-weight" type="number" min="20" max="660" step="0.5" inputmode="decimal" placeholder="Optional"></div>
     </div>
     <div class="acts"><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit">Save targets</button></div>
   </form>
@@ -429,7 +430,7 @@
       <input type="radio" name="mdir" id="md-out" value="out"><label for="md-out">Spent</label>
       <input type="radio" name="mdir" id="md-in" value="in"><label for="md-in">Received</label></div></fieldset>
     <div class="row">
-      <div class="fld"><label for="m-amount">Amount (R)</label><input class="in" id="m-amount" type="number" min="0.01" step="0.01" required inputmode="decimal" placeholder="250"></div>
+      <div class="fld"><label for="m-amount">Amount (<span class="cur">R</span>)</label><input class="in" id="m-amount" type="number" min="0.01" step="0.01" required inputmode="decimal" placeholder="250"></div>
       <div class="fld"><label for="m-date">Date</label><input class="in" id="m-date" type="date" required></div>
     </div>
     <div class="fld"><label for="m-what">On what / from where</label><input class="in" id="m-what" maxlength="120" required placeholder="Uber Eats, commission, gym fee…"></div>
@@ -477,6 +478,29 @@
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit">Save</button></div>
   </form>
 
+  <!-- customize -->
+  <form class="sheet" id="f-setup" autocomplete="off" hidden>
+    <h3 id="u-h">Customize</h3>
+    <p class="hint" id="u-sub">Make Leveling Up fit your life. You can change any of this later from Character.</p>
+    <div class="fld"><label for="u-name">Player name</label><input class="in" id="u-name" maxlength="40" placeholder="Shown on your HUD"></div>
+    <div class="row">
+      <div class="fld"><label for="u-cur">Currency</label><select class="in" id="u-cur"></select></div>
+      <div class="fld" id="u-curF" hidden><label for="u-curx">Symbol</label><input class="in" id="u-curx" maxlength="4" placeholder="e.g. Fr"></div>
+      <fieldset class="fld"><legend>Weight in</legend><div class="seg">
+        <input type="radio" name="uunit" id="uu-kg" value="kg"><label for="uu-kg">kg</label>
+        <input type="radio" name="uunit" id="uu-lb" value="lb"><label for="uu-lb">lb</label></div></fieldset>
+    </div>
+    <fieldset class="fld"><legend>What you want to track</legend><div class="mods" id="u-mods"></div></fieldset>
+    <fieldset class="fld"><legend>Mission categories</legend>
+      <p class="hint">Rename them to match your life, and untick the ones you don't need.</p>
+      <div class="cat-edit" id="u-cats"></div></fieldset>
+    <div class="row" id="u-moneyF">
+      <div class="fld"><label for="u-in">Income categories</label><textarea class="in" id="u-in" rows="5" placeholder="One per line"></textarea></div>
+      <div class="fld"><label for="u-out">Spending categories</label><textarea class="in" id="u-out" rows="5" placeholder="One per line"></textarea></div>
+    </div>
+    <div class="acts"><span class="grow"></span><button class="btn" type="button" data-cancel id="u-cancel">Cancel</button><button class="btn primary" type="submit" id="u-save">Save</button></div>
+  </form>
+
   <!-- profile -->
   <form class="sheet" id="f-profile" autocomplete="off" hidden>
     <h3>Profile</h3>
@@ -495,8 +519,10 @@
     <div class="fld"><label for="auth-email">Email</label><input class="in" id="auth-email" type="email" autocomplete="username" required></div>
     <div class="fld"><label for="auth-pass">Password</label><input class="in" id="auth-pass" type="password" autocomplete="current-password" minlength="10" required></div>
     <div class="fld" id="auth-confirm-f" hidden><label for="auth-confirm">Confirm password</label><input class="in" id="auth-confirm" type="password" autocomplete="new-password"></div>
+    <div class="fld" id="auth-invite-f" hidden><label for="auth-invite">Invite code</label><input class="in" id="auth-invite" autocomplete="off" maxlength="100"></div>
     <p class="auth-err" id="auth-err" role="alert"></p>
     <button class="btn primary" type="submit" id="auth-go">Sign in</button>
+    <button class="linkbtn gold" type="button" id="auth-switch">New here? Create an account</button>
     <button class="linkbtn" type="button" id="auth-skip">Keep using it on this device only</button>
   </form>
 </div>

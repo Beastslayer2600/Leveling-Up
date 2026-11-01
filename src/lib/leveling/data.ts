@@ -1,23 +1,7 @@
+import { blankPrefs, guessCurrency, normalizePrefs } from "./prefs.js";
 import { blankRelease } from "./virtues.js";
 import { blankStats } from "./xp.js";
 import type { Data, Quest, Sheet } from "./types.js";
-
-export const OUT_CATS = [
-  "Groceries",
-  "Eating out & takeaways",
-  "Going out",
-  "Transport & fuel",
-  "Housing & bills",
-  "Health & gym",
-  "Shopping",
-  "Subscriptions",
-  "Business & tools",
-  "Savings & investing",
-  "Gifts & family",
-  "Giving & tithe",
-  "Other",
-];
-export const IN_CATS = ["Salary & commission", "Studio clients", "Adjudication fees", "Side income", "Other income"];
 
 export const SOC = {
   ig: { label: "Instagram", xp: 20 },
@@ -69,6 +53,7 @@ export function blankData(now = Date.now()): Data {
     coach: { items: [] },
     sheet: blankSheet(),
     release: blankRelease(),
+    prefs: blankPrefs(guessCurrency()),
     tomb: {},
     savedAt: 0,
   };
@@ -90,6 +75,7 @@ export function normalize(raw: unknown): Data {
     coach: { items: [], ...(d.coach || {}) },
     sheet: { ...blankSheet(), ...(d.sheet || {}) },
     release: { ...blankRelease(), ...(d.release || {}) },
+    prefs: normalizePrefs(d.prefs, Number(d.savedAt) > 0),
     tomb: d.tomb && typeof d.tomb === "object" ? d.tomb : {},
     savedAt: Number(d.savedAt) || 0,
   };

@@ -1,13 +1,13 @@
 import type { Exercise, SetRec, Workout } from "./types.js";
 
-/** Parse "80x8, 80x8, 85x6" (or "80kg×8"); bare numbers are bodyweight reps. */
+/** Parse "80x8, 80x8, 85x6" (or "80kg×8", "175lb×5"); bare numbers are bodyweight reps. The `kg` field holds whatever unit the player uses. */
 export function parseSets(str: string): SetRec[] {
   return String(str || "")
     .split(/[,;]+/)
     .map((s) => s.trim())
     .filter(Boolean)
     .map((s) => {
-      const m = s.replace(/\s/g, "").match(/^(\d+(?:\.\d+)?)(?:kg)?[x×*](\d+)$/i);
+      const m = s.replace(/\s/g, "").match(/^(\d+(?:\.\d+)?)(?:kg|lbs?)?[x×*](\d+)$/i);
       if (m) return { kg: +m[1], reps: +m[2] };
       const r = s.match(/^(\d+)$/);
       return r ? { kg: 0, reps: +r[1] } : null;

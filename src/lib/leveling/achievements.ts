@@ -1,6 +1,7 @@
 import { daysAgoKey, parseD } from "./dates.js";
 import { CATEGORY_BASE, CATS, PLAYER_BASE, levelOf } from "./xp.js";
-import type { Data } from "./types.js";
+import type { ModuleId, Prefs } from "./prefs.js";
+import type { CatId, Data } from "./types.js";
 
 export interface Ctx {
   n: Record<string, number>;
@@ -33,39 +34,48 @@ export interface Achievement {
   name: string;
   d: string;
   hidden?: boolean;
+  /** Only shown while this module is switched on. */
+  mod?: ModuleId;
+  /** Only shown while this category is switched on. Descriptions name it as {cat}. */
+  cat?: CatId;
   /** Data check. Achievements without one are granted by events. */
   f?: (c: Ctx) => boolean;
 }
 
 export const ACHIEVEMENT_XP = 50;
 
+/** Achievements that fit this player's settings (switched-off modules and categories drop out). */
+export function visibleAch(prefs: Prefs): Achievement[] {
+  return ACH.filter((a) => (!a.mod || prefs.modules[a.mod]) && (!a.cat || !prefs.catOff.includes(a.cat)));
+}
+
 export const ACH: Achievement[] = [
   { id: "first", name: "First Blood", d: "Complete your first mission.", f: (c) => (c.n.missions || 0) >= 1 },
   { id: "hattrick", name: "Hat Trick", d: "Finish three daily ops in one day." },
   { id: "boss", name: "Boss Slayer", d: "Complete a Boss-difficulty mission.", f: (c) => (c.n.boss || 0) >= 1 },
-  { id: "closer", name: "The Closer", d: "Hit a tracked Clients target.", f: (c) => (c.n.closer || 0) >= 1 },
-  { id: "adjeye", name: "Adjudicator's Eye", d: "Complete 5 adjudication missions.", f: (c) => (c.n.c_adjudication || 0) >= 5 },
-  { id: "iron", name: "Iron Initiate", d: "Log your first gym session.", f: (c) => c.gym >= 1 },
-  { id: "pbhunter", name: "PB Hunter", d: "Set 5 personal bests.", f: (c) => c.pbs >= 5 },
-  { id: "cardio", name: "Cardio Convert", d: "Log 5 cardio sessions.", f: (c) => c.cardio >= 5 },
-  { id: "marathon", name: "Marathoner", d: "Cover 42.2 km of cardio in total.", f: (c) => c.km >= 42.2 },
-  { id: "tenk", name: "10K Day", d: "Walk 10 000 steps in a day.", f: (c) => c.maxSteps >= 10000 },
-  { id: "steplord", name: "Step Lord", d: "Walk 20 000 steps in a single day.", hidden: true, f: (c) => c.maxSteps >= 20000 },
-  { id: "scale", name: "Scale Watcher", d: "Log your weight on 10 different days.", f: (c) => c.wDays >= 10 },
-  { id: "chef", name: "Home Chef", d: "Log 10 home-made meals.", f: (c) => c.home >= 10 },
-  { id: "butterfly", name: "Social Butterfly", d: "8 catch-ups or events in 30 days.", f: (c) => c.irl30 >= 8 },
-  { id: "content", name: "Content Machine", d: "Publish 10 posts across Instagram and LinkedIn.", f: (c) => c.posts >= 10 },
-  { id: "comeback", name: "The Comeback", d: "Reconnect with a group after a month apart.", hidden: true, f: (c) => c.comeback },
-  { id: "pincher", name: "Penny Pincher", d: "Log 10 good-call spends.", f: (c) => c.good >= 10 },
-  { id: "confess", name: "Confession Booth", d: "Own up to 5 bad-call spends.", hidden: true, f: (c) => c.bad >= 5 },
-  { id: "black", name: "In the Black", d: "Finish a month with more in than out.", f: (c) => c.black },
-  { id: "journal7", name: "Field Notes", d: "Journal on 7 different days.", f: (c) => c.journalDays >= 7 },
-  { id: "voice", name: "On the Record", d: "Save a voice note in your journal.", hidden: true, f: (c) => c.voiceNotes >= 1 },
-  { id: "grateful", name: "Grateful Heart", d: "Complete 7 daily virtues.", f: (c) => c.virtues >= 7 },
-  { id: "fruit", name: "Fruit of the Spirit", d: "Practise all nine fruits of the Spirit (Galatians 5).", f: (c) => c.fruits >= 9 },
-  { id: "openhand", name: "Open Hand", d: "Finish the 7-day Release Reset.", f: (c) => c.rrDone },
-  { id: "returner", name: "Return Again", d: "Use the reach-back tool 5 times. Coming back is part of it.", hidden: true, f: (c) => c.reach >= 5 },
-  { id: "sabbath", name: "Sabbath Keeper", d: "Complete a daily virtue on a Sunday.", hidden: true },
+  { id: "closer", name: "The Closer", d: "Hit a tracked {cat} target.", cat: "clients", f: (c) => (c.n.closer || 0) >= 1 },
+  { id: "adjeye", name: "Expert's Eye", d: "Complete 5 {cat} missions.", cat: "adjudication", f: (c) => (c.n.c_adjudication || 0) >= 5 },
+  { id: "iron", name: "Iron Initiate", d: "Log your first gym session.", mod: "body", f: (c) => c.gym >= 1 },
+  { id: "pbhunter", name: "PB Hunter", d: "Set 5 personal bests.", mod: "body", f: (c) => c.pbs >= 5 },
+  { id: "cardio", name: "Cardio Convert", d: "Log 5 cardio sessions.", mod: "body", f: (c) => c.cardio >= 5 },
+  { id: "marathon", name: "Marathoner", d: "Cover 42.2 km of cardio in total.", mod: "body", f: (c) => c.km >= 42.2 },
+  { id: "tenk", name: "10K Day", d: "Walk 10 000 steps in a day.", mod: "body", f: (c) => c.maxSteps >= 10000 },
+  { id: "steplord", name: "Step Lord", d: "Walk 20 000 steps in a single day.", mod: "body", hidden: true, f: (c) => c.maxSteps >= 20000 },
+  { id: "scale", name: "Scale Watcher", d: "Log your weight on 10 different days.", mod: "body", f: (c) => c.wDays >= 10 },
+  { id: "chef", name: "Home Chef", d: "Log 10 home-made meals.", mod: "body", f: (c) => c.home >= 10 },
+  { id: "butterfly", name: "Social Butterfly", d: "8 catch-ups or events in 30 days.", mod: "social", f: (c) => c.irl30 >= 8 },
+  { id: "content", name: "Content Machine", d: "Publish 10 posts across Instagram and LinkedIn.", mod: "social", f: (c) => c.posts >= 10 },
+  { id: "comeback", name: "The Comeback", d: "Reconnect with a group after a month apart.", mod: "social", hidden: true, f: (c) => c.comeback },
+  { id: "pincher", name: "Penny Pincher", d: "Log 10 good-call spends.", mod: "money", f: (c) => c.good >= 10 },
+  { id: "confess", name: "Confession Booth", d: "Own up to 5 bad-call spends.", mod: "money", hidden: true, f: (c) => c.bad >= 5 },
+  { id: "black", name: "In the Black", d: "Finish a month with more in than out.", mod: "money", f: (c) => c.black },
+  { id: "journal7", name: "Field Notes", d: "Journal on 7 different days.", mod: "journal", f: (c) => c.journalDays >= 7 },
+  { id: "voice", name: "On the Record", d: "Save a voice note in your journal.", mod: "journal", hidden: true, f: (c) => c.voiceNotes >= 1 },
+  { id: "grateful", name: "Grateful Heart", d: "Complete 7 daily virtues.", mod: "faith", f: (c) => c.virtues >= 7 },
+  { id: "fruit", name: "Fruit of the Spirit", d: "Practise all nine fruits of the Spirit (Galatians 5).", mod: "faith", f: (c) => c.fruits >= 9 },
+  { id: "openhand", name: "Open Hand", d: "Finish the 7-day Release Reset.", mod: "faith", f: (c) => c.rrDone },
+  { id: "returner", name: "Return Again", d: "Use the reach-back tool 5 times. Coming back is part of it.", mod: "faith", hidden: true, f: (c) => c.reach >= 5 },
+  { id: "sabbath", name: "Sabbath Keeper", d: "Complete a daily virtue on a Sunday.", mod: "faith", hidden: true },
   { id: "streak7", name: "On a Roll", d: "Keep a 7-day streak.", f: (c) => c.streak >= 7 },
   { id: "streak30", name: "Unbreakable", d: "Keep a 30-day streak.", f: (c) => c.streak >= 30 },
   { id: "lvl5", name: "Field Agent", d: "Reach level 5.", f: (c) => c.level >= 5 },
@@ -74,7 +84,7 @@ export const ACH: Achievement[] = [
   { id: "recruited", name: "Recruited", d: "Accept a mission from the Coach." },
   { id: "deadeye", name: "Deadeye", d: "Land exactly 100 XP in one day. A sharpshooter's grouping.", hidden: true },
   { id: "pressure", name: "Pressure Is a Privilege", d: "Clear 3 Hard or Boss missions in one day.", hidden: true },
-  { id: "renaissance", name: "Renaissance Man", d: "Earn XP in 6 categories in one day.", hidden: true },
+  { id: "renaissance", name: "Renaissance Run", d: "Earn XP in 6 categories in one day.", hidden: true },
   { id: "nightowl", name: "Night Owl", d: "Earn XP between midnight and 4am.", hidden: true },
   { id: "earlybird", name: "Early Bird", d: "Earn XP between 4am and 6am.", hidden: true },
   { id: "curious", name: "Curious Cat", d: "Poke the level badge seven times.", hidden: true },

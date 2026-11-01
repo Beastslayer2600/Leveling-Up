@@ -675,7 +675,8 @@ button.tick:hover i { box-shadow: 0 0 12px -2px var(--cc); background: color-mix
 }
 .tabs-in {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 2px;
   width: 100%;
   max-width: 560px;
@@ -916,3 +917,16 @@ audio { color-scheme: dark; }
   .stats3.big .stat b { font-size: 19px; }
   .row3 { grid-template-columns: 1fr 1fr; }
 }
+
+/* Customize sheet */
+.mods { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.mods label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 12px; background: var(--well); cursor: pointer; }
+.mods label:has(input:checked) { border-color: var(--gold); background: rgba(245, 185, 66, 0.1); }
+.mods input { margin-top: 3px; accent-color: var(--gold); }
+.mods b { display: block; font-family: var(--f-display); font-weight: 600; letter-spacing: 0.04em; }
+.mods small { display: block; color: var(--muted); font-size: 12px; }
+.cat-edit { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-top: 8px; }
+.cat-row { display: flex; align-items: center; gap: 8px; padding-left: 10px; border-left: 3px solid var(--cc); }
+.cat-row input[type="checkbox"] { accent-color: var(--gold); width: 18px; height: 18px; flex: none; }
+.cat-row .in { flex: 1; min-width: 0; }
+.cat-row:has(input[type="checkbox"]:not(:checked)) .in { opacity: 0.45; }

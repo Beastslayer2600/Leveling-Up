@@ -1,11 +1,14 @@
 import { EVENT_TYPES } from "../src/lib/leveling/events.js";
 import { clearCookie, hashPassword, readSession, sameOrigin, sameToken, sessionCookie, signSession, verifyPassword } from "./auth.js";
 import type { Sql } from "./db.js";
+import { randomBytes } from "node:crypto";
 
 export interface Env {
   AUTH_SECRET?: string;
-  /** The only email allowed to create the account. */
+  /** Your own account: events from other apps (EVENT_TOKEN) are paid to it. Optional. */
   OWNER_EMAIL?: string;
+  /** When set, new accounts need this code to sign up. Unset means anyone can sign up. */
+  INVITE_CODE?: string;
   /** Bearer token other apps (Judges Companion…) use to send events. */
   EVENT_TOKEN?: string;
   ANTHROPIC_API_KEY?: string;
@@ -56,23 +59,25 @@ async function userId(req: Request, d: Deps): Promise<string | null> {
 }
 
 const ip = (req: Request) => (req.headers.get("x-forwarded-for") || "local").split(",")[0].trim();
-const ownerIdFor = (email: string) => "u_" + email.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").slice(0, 40);
+const newUserId = () => "u_" + randomBytes(12).toString("hex");
+const EMAIL_RE = /^[^\s@]{1,100}@[^\s@]{1,100}\.[^\s@]{2,40}$/;
 
 /* ---------- /api/auth ---------- */
 
 export async function authRoute(req: Request, d: Deps): Promise<Response> {
-  const configured = !!(d.env.AUTH_SECRET && d.env.OWNER_EMAIL);
+  const configured = !!d.env.AUTH_SECRET;
+  const inviteRequired = !!d.env.INVITE_CODE;
   if (req.method === "GET") {
     if (!configured) return json({ configured: false });
     const users = await d.sql.query<{ n: number }>(`select count(*)::int as n from lu_users`);
     const id = await userId(req, d);
     const me = id ? (await d.sql.query<{ email: string }>(`select email from lu_users where id = $1`, [id]))[0] : null;
-    return json({ configured: true, needsSetup: users[0].n === 0, user: me ? { email: me.email } : null });
+    return json({ configured: true, inviteRequired, needsSetup: users[0].n === 0, user: me ? { email: me.email } : null });
   }
   if (req.method !== "POST") return err(405, "Method not allowed");
   if (!configured) return err(503, "Sign-in isn't configured on the server yet.");
   if (!sameOrigin(req)) return err(403, "Cross-site request blocked");
-  const b = await body<{ action?: string; email?: string; password?: string }>(req);
+  const b = await body<{ action?: string; email?: string; password?: string; invite?: string }>(req);
   if (!b) return err(400, "Bad request");
 
   if (b.action === "logout") return json({ ok: true }, 200, { "set-cookie": clearCookie() });
@@ -81,13 +86,17 @@ export async function authRoute(req: Request, d: Deps): Promise<Response> {
   const password = String(b.password || "");
   if (await limited(d.sql, "login:" + ip(req), 10, 15)) return err(429, "Too many attempts. Wait 15 minutes.");
 
-  if (b.action === "setup") {
-    const owner = d.env.OWNER_EMAIL!.trim().toLowerCase();
-    if (email !== owner) return err(403, "That email doesn't match the owner email for this app. Check it for typos.");
+  // "setup" is the old name for signup, kept so older app builds still work.
+  if (b.action === "signup" || b.action === "setup") {
+    if (!EMAIL_RE.test(email)) return err(400, "Enter a valid email address.");
     if (password.length < 10) return err(400, "Use at least 10 characters.");
+    const isOwner = !!d.env.OWNER_EMAIL && email === d.env.OWNER_EMAIL.trim().toLowerCase();
+    if (inviteRequired && !isOwner && !sameToken(String(b.invite || "").trim(), d.env.INVITE_CODE!.trim()))
+      return err(403, "That invite code isn't right. Ask whoever runs this app for it.");
+    if (await limited(d.sql, "signup:" + ip(req), 5, 60)) return err(429, "Too many new accounts from here. Try again in an hour.");
     const existing = await d.sql.query(`select 1 from lu_users where email = $1`, [email]);
-    if (existing.length) return err(409, "Account already exists. Sign in instead.");
-    const id = ownerIdFor(email);
+    if (existing.length) return err(409, "There's already an account with that email. Sign in instead.");
+    const id = newUserId();
     await d.sql.query(`insert into lu_users (id, email, pass_hash) values ($1, $2, $3)`, [id, email, await hashPassword(password)]);
     return json({ ok: true, user: { email } }, 200, { "set-cookie": sessionCookie(await signSession(id, d.env.AUTH_SECRET!)) });
   }
@@ -209,9 +218,10 @@ export async function eventsRoute(req: Request, d: Deps): Promise<Response> {
   if (!/^[a-zA-Z0-9:._-]{8,160}$/.test(key)) return err(400, "Bad idempotency key");
   const date = validDate(b?.date) ?? new Date().toISOString().slice(0, 10);
 
-  const owner = d.env.OWNER_EMAIL ? ownerIdFor(d.env.OWNER_EMAIL) : "";
-  const users = await d.sql.query(`select 1 from lu_users where id = $1`, [owner]);
-  if (!users.length) return err(409, "No account yet. Sign in to Leveling Up first.");
+  const ownerEmail = (d.env.OWNER_EMAIL || "").trim().toLowerCase();
+  const users = ownerEmail ? await d.sql.query<{ id: string }>(`select id from lu_users where email = $1`, [ownerEmail]) : [];
+  if (!users.length) return err(409, "No account for OWNER_EMAIL yet. Sign up in Leveling Up first.");
+  const owner = users[0].id;
   const rows = await d.sql.query(
     `insert into lu_events (user_id, key, type, occurred_on) values ($1, $2, $3, $4::date) on conflict (user_id, key) do nothing returning key`,
     [owner, key, type, date],

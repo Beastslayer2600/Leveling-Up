@@ -22,8 +22,8 @@ const req = (path: string, init: RequestInit & { cookie?: string } = {}) => {
 const post = (path: string, b: unknown, cookie?: string) => req(path, { method: "POST", body: JSON.stringify(b), cookie });
 const cookieOf = (r: Response) => (r.headers.get("set-cookie") || "").split(";")[0];
 
-async function signedIn(d: Deps) {
-  const r = await authRoute(post("/api/auth", { action: "setup", email: "owner@example.com", password: "correct horse battery" }), d);
+async function signedIn(d: Deps, email = "owner@example.com") {
+  const r = await authRoute(post("/api/auth", { action: "signup", email, password: "correct horse battery" }), d);
   expect(r.status).toBe(200);
   return cookieOf(r);
 }
@@ -34,16 +34,36 @@ describe("auth", () => {
 
   it("reports setup state", async () => {
     const r = await (await authRoute(req("/api/auth"), d)).json();
-    expect(r).toEqual({ configured: true, needsSetup: true, user: null });
+    expect(r).toEqual({ configured: true, inviteRequired: false, needsSetup: true, user: null });
   });
-  it("lets only the owner email create the account, once", async () => {
-    expect((await authRoute(post("/api/auth", { action: "setup", email: "x@y.com", password: "long enough pw" }), d)).status).toBe(403);
-    expect((await authRoute(post("/api/auth", { action: "setup", email: "owner@example.com", password: "short" }), d)).status).toBe(400);
-    const c = await signedIn(d);
+  it("lets anyone sign up, once per email", async () => {
+    expect((await authRoute(post("/api/auth", { action: "signup", email: "not-an-email", password: "long enough pw" }), d)).status).toBe(400);
+    expect((await authRoute(post("/api/auth", { action: "signup", email: "friend@example.com", password: "short" }), d)).status).toBe(400);
+    const c = await signedIn(d, "Friend@Example.com");
     expect(c).toMatch(/^lu_session=/);
-    expect((await authRoute(post("/api/auth", { action: "setup", email: "owner@example.com", password: "another long pw" }), d)).status).toBe(409);
+    expect((await authRoute(post("/api/auth", { action: "signup", email: "friend@example.com", password: "another long pw" }), d)).status).toBe(409);
     const me = await (await authRoute(req("/api/auth", { cookie: c }), d)).json();
-    expect(me.user).toEqual({ email: "owner@example.com" });
+    expect(me.user).toEqual({ email: "friend@example.com" });
+  });
+  it("keeps each account's log separate, even for look-alike emails", async () => {
+    const a = await signedIn(d, "a.b@example.com");
+    const b = await signedIn(d, "a_b@example.com");
+    const put = (cookie: string, doc: unknown) =>
+      stateRoute(req("/api/state", { method: "PUT", body: JSON.stringify({ baseVersion: 0, doc }), cookie }), d);
+    expect((await put(a, { who: "a" })).status).toBe(200);
+    expect((await put(b, { who: "b" })).status).toBe(200);
+    expect((await (await stateRoute(req("/api/state", { cookie: a }), d)).json()).doc).toEqual({ who: "a" });
+    expect((await (await stateRoute(req("/api/state", { cookie: b }), d)).json()).doc).toEqual({ who: "b" });
+  });
+  it("asks for the invite code when one is set, except from the owner", async () => {
+    const di = await freshDeps({ env: { ...env, INVITE_CODE: "let-me-in" } });
+    expect((await (await authRoute(req("/api/auth"), di)).json()).inviteRequired).toBe(true);
+    const tryUp = (email: string, invite?: string) =>
+      authRoute(post("/api/auth", { action: "signup", email, password: "correct horse battery", invite }), di);
+    expect((await tryUp("friend@example.com")).status).toBe(403);
+    expect((await tryUp("friend@example.com", "wrong")).status).toBe(403);
+    expect((await tryUp("friend@example.com", "let-me-in")).status).toBe(200);
+    expect((await tryUp("owner@example.com")).status).toBe(200);
   });
   it("logs in with the right password only", async () => {
     await signedIn(d);

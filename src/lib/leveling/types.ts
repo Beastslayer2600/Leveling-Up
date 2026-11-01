@@ -1,3 +1,5 @@
+import type { Prefs } from "./prefs.js";
+
 export type CatId =
   | "clients"
   | "admin"
@@ -219,6 +221,8 @@ export interface Data {
   coach: CoachState;
   sheet: Sheet;
   release: Release;
+  /** What this player tracks and how it's labelled. */
+  prefs: Prefs;
   /** Deleted record id -> deletion time (ms), so a deletion survives a sync merge. */
   tomb: Record<string, number>;
   /** Last local save (ms). Decides which copy's stats and sheet win in a merge. */
