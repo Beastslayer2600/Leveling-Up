@@ -54,14 +54,34 @@ export const sessionCookie = (token: string) =>
   `${COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${MAX_AGE}`;
 export const clearCookie = () => `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 
+/**
+ * Base44 preview only. The sandbox proxy shows the browser this app's public
+ * preview origin, but presents the sandbox hostname to this process, so the two
+ * can never be equal. Accept that one known origin (built from the suffix the
+ * platform supplies) and nothing else. Outside the preview this returns null.
+ */
+function previewOrigin(req: Request): string | null {
+  if (process.env.BASE44_PREVIEW_MODE !== "1") return null;
+  const suffix = process.env.BASE44_PUBLIC_HOST_SUFFIX?.trim();
+  const origin = req.headers.get("origin");
+  if (!suffix || !origin) return null;
+  try {
+    const url = new URL(origin);
+    return url.protocol === "https:" && url.hostname === `3000-${suffix}` ? url.hostname : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Reject cross-site state changes: the Origin, when sent, must match this host. */
 export function sameOrigin(req: Request): boolean {
   const origin = req.headers.get("origin");
   if (!origin) return true;
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || new URL(req.url).host;
   try {
-    return new URL(origin).host === host;
+    if (new URL(origin).host === host) return true;
   } catch {
     return false;
   }
+  return previewOrigin(req) !== null;
 }

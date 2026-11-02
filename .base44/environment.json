@@ -1,0 +1,18 @@
+{
+  "previewPort": 3000,
+  "healthPath": "/",
+  "startCommand": "docker compose -f docker-compose.base44.yml up -d",
+  "secrets": [
+    {
+      "name": "AUTH_SECRET",
+      "description": "Signs the session cookie (server/auth.ts). Without it the dev server invents a random one per restart, which signs everyone out.",
+      "requiredAtBoot": false,
+      "generatedForDevelopment": true
+    },
+    {
+      "name": "ANTHROPIC_API_KEY",
+      "description": "Optional. Switches on the AI coach (/api/coach). Get one at https://console.anthropic.com/settings/keys",
+      "requiredAtBoot": false
+    }
+  ]
+}

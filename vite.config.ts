@@ -36,9 +36,20 @@ function devApi(): Plugin {
   };
 }
 
+/**
+ * Base44 preview only: the sandbox proxy reaches the dev server as
+ * `<port>-<sandbox id>.<BASE44_SANDBOX_HOST_DOMAIN>`, so that domain must be an
+ * allowed host. Unset outside the preview, leaving Vite's default allowlist.
+ */
+const previewAllowedHosts =
+  process.env.BASE44_PREVIEW_MODE === "1" && process.env.BASE44_SANDBOX_HOST_DOMAIN
+    ? [`.${process.env.BASE44_SANDBOX_HOST_DOMAIN}`]
+    : undefined;
+
 export default defineConfig({
   base: "./",
   plugins: [devApi()],
+  server: { allowedHosts: previewAllowedHosts },
   test: {
     include: ["src/**/*.test.ts", "server/**/*.test.ts"],
   },
