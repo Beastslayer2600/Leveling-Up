@@ -1,0 +1,10 @@
+[
+  {
+    "id": "example-fix-file-1",
+    "title": "Client A: submit the missing record of advice",
+    "note": "Copy this file to src/missions.local.json and put your own missions in it. That file is git-ignored. Categories: clients, admin, training, adjudication, social, money, faith, mind, side. Kinds: quest, daily, counter.",
+    "cat": "clients",
+    "kind": "quest",
+    "xp": 50
+  }
+]
