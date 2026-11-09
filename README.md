@@ -32,6 +32,10 @@ npm test         # logic tests
 npm run build    # static site in dist/
 ```
 
+### Local missions
+
+To load a batch of missions into your local copy, copy `src/missions.example.json` to `src/missions.local.json` and edit it. `npm run dev` adds any missions from that file that aren't already in your log, and doesn't bring back ones you've deleted. The file is git-ignored, so client names stay out of the repo, and the production build doesn't include it.
+
 ## Install as an app
 
 - **Windows (Chrome or Edge):** open the site, then choose **Install app** in the address bar.

@@ -106,3 +106,50 @@ export function kindLabel(q: Quest): string {
     return q.period === "week" ? "Weekly target" : q.period === "month" ? "Monthly target" : "Target";
   return "Quest";
 }
+
+/** A mission from a local seed file: the fields a player would type into the mission sheet. */
+export type SeedMission = Pick<Quest, "id" | "title" | "cat" | "kind" | "xp"> &
+  Partial<Pick<Quest, "note" | "due" | "target" | "period">>;
+
+const KINDS: Quest["kind"][] = ["daily", "quest", "counter"];
+
+/**
+ * Add seed missions the log doesn't have yet. A seed already in the log, or one the
+ * player deleted (tombstoned), is left alone, so loading the same file twice is a no-op.
+ */
+export function seedMissions(
+  quests: Quest[],
+  tomb: Record<string, number>,
+  seeds: unknown,
+  cats: Set<string>,
+  now = Date.now(),
+): Quest[] {
+  if (!Array.isArray(seeds)) return [];
+  const have = new Set(quests.map((q) => q.id));
+  const out: Quest[] = [];
+  seeds.forEach((raw, i) => {
+    const s = (raw && typeof raw === "object" ? raw : {}) as Partial<SeedMission>;
+    const id = String(s.id ?? "").trim();
+    const title = String(s.title ?? "").trim();
+    if (!id || !title || have.has(id) || tomb[id] || !cats.has(String(s.cat))) return;
+    const kind = KINDS.includes(s.kind as Quest["kind"]) ? (s.kind as Quest["kind"]) : "quest";
+    const q: Quest = {
+      id,
+      title: title.slice(0, 120),
+      cat: s.cat as Quest["cat"],
+      kind,
+      xp: Math.max(1, Math.min(500, Math.round(Number(s.xp) || 25))),
+      created: now + i,
+    };
+    if (s.note) q.note = String(s.note).slice(0, 1000);
+    if (kind !== "daily" && s.due && /^\d{4}-\d{2}-\d{2}$/.test(String(s.due))) q.due = String(s.due);
+    if (kind === "counter") {
+      q.target = Math.max(1, Math.min(999, Math.round(Number(s.target) || 1)));
+      q.period = s.period === "week" || s.period === "month" ? s.period : "none";
+      q.progress = 0;
+    }
+    have.add(id);
+    out.push(q);
+  });
+  return out;
+}

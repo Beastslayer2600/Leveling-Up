@@ -10,9 +10,10 @@ import "./styles.css";
 
 import { buildPrompt, parseSuggestions } from "./lib/leveling/coach";
 import { activeCats } from "./lib/leveling/prefs";
+import { CATS } from "./lib/leveling/xp";
 import { normalize } from "./lib/leveling/data";
 import { dkey } from "./lib/leveling/dates";
-import { closed, stepCounter, toggleQuest } from "./lib/leveling/missions";
+import { closed, seedMissions, stepCounter, toggleQuest } from "./lib/leveling/missions";
 import { completeVirtue, rrState, todayVirtue, VIRTUE_XP } from "./lib/leveling/virtues";
 import type { Quest } from "./lib/leveling/types";
 import { $, ICON } from "./ui/dom";
@@ -246,8 +247,30 @@ setTab(S.tab);
 after();
 // First run: once we know whose log this is, offer setup so the app fits this player.
 void initSync(() => {
+  void loadLocalMissions();
   if (!S.data.prefs.setup && !S.sheetName && $("auth").hidden) openSheet("setup");
 });
+
+/**
+ * Local dev only: add missions from src/missions.local.json (git-ignored, so client
+ * names never reach the repo). Missions already in the log, or deleted, aren't re-added.
+ * The production build drops this code and the file.
+ */
+async function loadLocalMissions() {
+  if (!import.meta.env.DEV) return;
+  const files = import.meta.glob<{ default: unknown }>("./missions.local.json");
+  const load = files["./missions.local.json"];
+  if (!load) return;
+  try {
+    const fresh = seedMissions(S.data.quests, S.data.tomb, (await load()).default, new Set(CATS.map((c) => c.id)));
+    if (!fresh.length) return;
+    fresh.forEach((q) => put("quests", q));
+    render();
+    toast(`${fresh.length} mission${fresh.length === 1 ? "" : "s"} added from missions.local.json`, "xp");
+  } catch {
+    toast("Couldn't read src/missions.local.json.");
+  }
+}
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));

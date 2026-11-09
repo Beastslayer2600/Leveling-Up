@@ -4,7 +4,7 @@ import { buildPrompt, digest, parseSuggestions } from "./coach.js";
 import { blankData, normalize } from "./data.js";
 import { curKey, dkey, weekStart } from "./dates.js";
 import { applyEvent, EVENT_TYPES, type LevelEvent } from "./events.js";
-import { closed, eff, isDone, stepCounter, toggleQuest } from "./missions.js";
+import { closed, eff, isDone, seedMissions, stepCounter, toggleQuest } from "./missions.js";
 import { e1rm, findNewPbs, parseSets, pbMap, workoutXp } from "./training.js";
 import { completeVirtue, rrState, todayVirtue, VIRTUES } from "./virtues.js";
 import { journalStreak, journalXp, todayPrompt } from "./journal.js";
@@ -383,5 +383,32 @@ describe("sync merge", () => {
   it("prunes old tombstones", () => {
     const now = Date.UTC(2026, 9, 14);
     expect(pruneTombs({ old: now - 200 * 864e5, fresh: now - 864e5 }, now)).toEqual({ fresh: now - 864e5 });
+  });
+});
+
+describe("seedMissions", () => {
+  const cats = new Set(["clients", "admin"]);
+  const seeds = [
+    { id: "s1", title: "Fix the file", cat: "clients", kind: "quest", xp: 50, note: "n", due: "2026-12-01" },
+    { id: "s2", title: "Weekly calls", cat: "clients", kind: "counter", xp: 10, target: 5, period: "week" },
+    { id: "s3", title: "Bad cat", cat: "nope", kind: "quest", xp: 10 },
+    { id: "", title: "No id", cat: "admin", kind: "quest", xp: 10 },
+  ];
+
+  it("adds valid seeds and skips bad ones", () => {
+    const out = seedMissions([], {}, seeds, cats, 1000);
+    expect(out.map((q) => q.id)).toEqual(["s1", "s2"]);
+    expect(out[0]).toMatchObject({ kind: "quest", xp: 50, note: "n", due: "2026-12-01", created: 1000 });
+    expect(out[1]).toMatchObject({ kind: "counter", target: 5, period: "week", progress: 0 });
+  });
+
+  it("never re-adds a mission already in the log or one the player deleted", () => {
+    const first = seedMissions([], {}, seeds, cats);
+    expect(seedMissions(first, {}, seeds, cats)).toEqual([]);
+    expect(seedMissions([], { s1: 1, s2: 1 }, seeds, cats)).toEqual([]);
+  });
+
+  it("ignores a file that isn't a list", () => {
+    expect(seedMissions([], {}, { id: "x" }, cats)).toEqual([]);
   });
 });
