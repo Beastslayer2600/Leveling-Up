@@ -10,17 +10,21 @@ import "./styles.css";
 
 import { buildPrompt, parseSuggestions } from "./lib/leveling/coach";
 import { activeCats } from "./lib/leveling/prefs";
+import { CATS } from "./lib/leveling/xp";
 import { normalize } from "./lib/leveling/data";
 import { dkey } from "./lib/leveling/dates";
-import { closed, stepCounter, toggleQuest } from "./lib/leveling/missions";
+import { addsHabit, habitSlot, parkHabit, unparkHabit, useSlot } from "./lib/leveling/habits";
+import { closed, completeQuestStep, seedMissions, stepCounter, toggleQuest } from "./lib/leveling/missions";
 import { completeVirtue, rrState, todayVirtue, VIRTUE_XP } from "./lib/leveling/virtues";
 import type { Quest } from "./lib/leveling/types";
 import { $, ICON } from "./ui/dom";
 import { toast } from "./ui/fx";
 import { initJournal } from "./ui/journal";
+import { closeFocus, openFocus } from "./ui/focus";
+import { initRhythm } from "./ui/rhythm";
 import { askCoach, initSync } from "./ui/sync";
 import { closeSheet, initSheets, openCommitMission, openEntry, openSheet } from "./ui/sheets";
-import { S, after, award, drop, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
+import { S, after, award, drop, focusFromHash, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
 import { coachEnabled, render, renderNav } from "./ui/views";
 
 onRender(render);
@@ -32,9 +36,11 @@ document.querySelectorAll<HTMLElement>("[data-icon]").forEach((el) => {
 });
 
 S.tab = initialTab();
+S.focus = focusFromHash();
 renderNav();
 initSheets();
 initJournal();
+initRhythm();
 
 /* ---------- missions ---------- */
 
@@ -45,6 +51,24 @@ function toggle(id: string) {
   put("quests", r.quest);
   award(r.award);
   after();
+}
+
+/** Finish the next piece of a stepped quest. The last piece completes the quest itself. */
+function questStep(id: string) {
+  const q = S.data.quests.find((x) => x.id === id);
+  const r = q && completeQuestStep(q);
+  if (!q || !r) return;
+  put("quests", r.quest);
+  if (r.finished && q.kind === "quest" && !q.done) toggle(id);
+  else toast(r.quest.waitingOn ? `Waiting on ${r.quest.waitingOn}. Pick up another piece meanwhile.` : "Step done");
+}
+
+function laterAdd(id: string) {
+  const item = S.data.habits.later.find((x) => x.id === id);
+  if (!item || !habitSlot(S.data.habits).open) return;
+  S.data.habits = useSlot(unparkHabit(S.data.habits, id), Date.now());
+  put("quests", { ...item.quest, created: Date.now() });
+  toast("Habit added: " + item.quest.title, "xp");
 }
 
 function step(id: string, d: number) {
@@ -131,9 +155,16 @@ function acceptSug(i: number) {
   if (!s) return;
   const q: Quest = { id: newId(), created: Date.now(), title: s.title, note: s.why, cat: s.cat, kind: s.kind, xp: s.xp, coach: true };
   if (s.kind === "counter") { q.target = s.target || 3; q.period = s.period || "week"; q.progress = 0; }
-  put("quests", q);
   S.data.coach = { ...S.data.coach, items: S.data.coach.items.filter((_, j) => j !== i) };
-  save();
+  // Build cap: a coach habit waits in Later when no slot is open.
+  if (S.data.prefs.modules.rhythm && addsHabit(q) && !habitSlot(S.data.habits).open) {
+    S.data.habits = parkHabit(S.data.habits, q, Date.now());
+    save();
+    render();
+    return toast("No habit slot is open yet. Parked in Later.");
+  }
+  if (S.data.prefs.modules.rhythm && addsHabit(q)) S.data.habits = useSlot(S.data.habits, Date.now());
+  put("quests", q);
   render();
   toast("Mission unlocked: " + s.title, "xp");
   setTimeout(() => grant(["recruited"]), 1300);
@@ -194,6 +225,7 @@ document.addEventListener("click", (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>("[data-act],[data-tab],[data-fab]");
   if (!b) return;
   if (b.dataset.tab) {
+    if (S.focus) closeFocus();
     setTab(b.dataset.tab as Tab);
     render();
     window.scrollTo({ top: 0 });
@@ -212,6 +244,9 @@ document.addEventListener("click", (e) => {
   const find = <T extends { id: string }>(arr: T[]) => arr.find((x) => x.id === id) || null;
   switch (a) {
     case "toggle": toggle(id); render(); break;
+    case "q-step": questStep(id); render(); break;
+    case "later-add": laterAdd(id); render(); break;
+    case "later-drop": S.data.habits = unparkHabit(S.data.habits, id); save(); render(); break;
     case "plus": step(id, 1); render(); break;
     case "minus": step(id, -1); render(); break;
     case "edit-q": if (find(S.data.quests)) openSheet("mission", find(S.data.quests)); break;
@@ -232,10 +267,16 @@ document.addEventListener("click", (e) => {
       S.data.release = { ...S.data.release, days: {}, cycles: (S.data.release.cycles || 0) + 1 };
       save(); render(); break;
     case "rr-commit": openCommitMission(); break;
+    case "open-morning": openFocus("morning"); break;
+    case "open-debrief": openFocus("debrief"); break;
+    case "open-week": openFocus("week"); break;
   }
 });
 
 window.addEventListener("hashchange", () => {
+  const f = focusFromHash();
+  if (f !== S.focus) { S.focus = f; closeSheet(); render(); }
+  if (f) return;
   const t = initialTab();
   if (t !== S.tab) { S.tab = t; closeSheet(); render(); }
 });
@@ -246,7 +287,47 @@ setTab(S.tab);
 after();
 // First run: once we know whose log this is, offer setup so the app fits this player.
 void initSync(() => {
+  void loadLocalMissions();
   if (!S.data.prefs.setup && !S.sheetName && $("auth").hidden) openSheet("setup");
+});
+
+/** Add missions from a seed list. Ones already in the log, or deleted, aren't added again. */
+function addSeeds(seeds: unknown, source: string): void {
+  const fresh = seedMissions(S.data.quests, S.data.tomb, seeds, new Set(CATS.map((c) => c.id)));
+  if (!fresh.length) return void (source === "file" && toast("Nothing new in that file."));
+  fresh.forEach((q) => put("quests", q));
+  render();
+  toast(`${fresh.length} mission${fresh.length === 1 ? "" : "s"} added`, "xp");
+}
+
+/**
+ * Local dev only: add missions from src/missions.local.json (git-ignored, so client
+ * names never reach the repo). The production build drops this code and the file.
+ */
+async function loadLocalMissions() {
+  if (!import.meta.env.DEV) return;
+  const files = import.meta.glob<{ default: unknown }>("./missions.local.json");
+  const load = files["./missions.local.json"];
+  if (!load) return;
+  try {
+    addSeeds((await load()).default, "local");
+  } catch {
+    toast("Couldn't read src/missions.local.json.");
+  }
+}
+
+// The same file can be loaded by hand on any device, so private missions never need to be in the repo.
+$("d-seed").addEventListener("click", () => ($("d-seedfile") as HTMLInputElement).click());
+$("d-seedfile").addEventListener("change", async () => {
+  const input = $("d-seedfile") as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) return;
+  try {
+    addSeeds(JSON.parse(await file.text()), "file");
+  } catch {
+    toast("That file isn't a missions list.");
+  }
 });
 
 if ("serviceWorker" in navigator && import.meta.env.PROD) {

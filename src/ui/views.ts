@@ -2,13 +2,15 @@ import { visibleAch } from "../lib/leveling/achievements";
 import { activeCats, catName } from "../lib/leveling/prefs";
 import { ATTRS, SOC, VERD } from "../lib/leveling/data";
 import { daysAgoKey, daysSince, dkey, parseD, weekStart, yday, zpad } from "../lib/leveling/dates";
-import { closed, eff, isDone, kindLabel } from "../lib/leveling/missions";
+import { habitSlot } from "../lib/leveling/habits";
+import { closed, eff, isDone, kindLabel, locked, nextStepOf, openStep } from "../lib/leveling/missions";
 import { e1rm, exSummary, pbMap } from "../lib/leveling/training";
 import { RR_DAYS, VIRTUES, rrState, todayVirtue } from "../lib/leveling/virtues";
 import { CAT, CATEGORY_BASE, PLAYER_BASE, levelOf, liveStreak, rankOf } from "../lib/leveling/xp";
 import type { Quest } from "../lib/leveling/types";
 import { journaledOn } from "../lib/leveling/journal";
 import { renderJournal } from "./journal";
+import { renderFocus, renderMorningCard, settleTimer } from "./rhythm";
 import { renderMode, sync } from "./sync";
 import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, setCurrency, shortD, sumBy } from "./dom";
 import { S, VIEWS, enabledViews, type Tab } from "./state";
@@ -54,6 +56,7 @@ function applyPrefs(): void {
 
 export function render(): void {
   applyPrefs();
+  settleTimer();
   const st = S.data.stats;
   const L = levelOf(st.xp, PLAYER_BASE);
   const t = dkey();
@@ -84,6 +87,7 @@ export function render(): void {
 
   renderHudSide();
   ({ missions: renderMissions, journal: renderJournal, body: renderBody, social: renderSocial, money: renderMoney, character: renderCharacter })[S.tab]();
+  renderFocus();
 }
 
 function logRows(): string {
@@ -113,8 +117,10 @@ function renderHudSide(): void {
 function card(q: Quest): string {
   const done = isDone(q);
   const id = esc(q.id);
-  const meta = `<div class="meta"><span class="cat">${esc(cn(CAT[q.cat] ? q.cat : "side"))}</span><span>${kindLabel(q)}</span>${dueBit(q)}${q.starter ? '<span class="tag">Starter</span>' : ""}${q.coach ? '<span class="tag">Coach</span>' : ""}</div>`;
-  const body = `<button class="q-body" type="button" data-act="edit-q" data-id="${id}"><div class="q-title">${esc(q.title)}</div>${q.note ? `<div class="q-note">${esc(q.note)}</div>` : ""}${meta}</button>`;
+  const st = openStep(q);
+  const next = nextStepOf(q);
+  const meta = `<div class="meta"><span class="cat">${esc(cn(CAT[q.cat] ? q.cat : "side"))}</span><span>${kindLabel(q)}</span>${dueBit(q)}${q.waitingOn && !done ? `<span class="soon">Waiting on ${esc(q.waitingOn)}</span>` : ""}${q.main ? '<span class="tag main">Main</span>' : ""}${q.starter ? '<span class="tag">Starter</span>' : ""}${q.coach ? '<span class="tag">Coach</span>' : ""}</div>`;
+  const body = `<button class="q-body" type="button" data-act="edit-q" data-id="${id}"><div class="q-title">${esc(q.title)}</div>${q.note ? `<div class="q-note">${esc(q.note)}</div>` : ""}${next && !done ? `<div class="q-next">Next: ${esc(next)}${st?.mins ? ` · ${st.mins} min` : ""}${st?.decision ? ' <span class="tag main">Your call</span>' : ""}</div>` : ""}${meta}</button>`;
   let left: string;
   let extra = "";
   if (q.kind === "counter") {
@@ -123,6 +129,11 @@ function card(q: Quest): string {
     left = `<span class="tick ctr-ring" aria-hidden="true" style="--p:${pct(p, t)}"><i></i></span>`;
     extra = `<div class="ctr"><button class="step" type="button" data-act="minus" data-id="${id}" aria-label="Remove one">−</button><div class="meter"><i style="width:${pct(p, t)}%"></i></div><span class="ctr-n">${p}<em> / ${t}</em></span><button class="step plus" type="button" data-act="plus" data-id="${id}" aria-label="Add one">+1</button></div>`;
   } else {
+    if (st && !done) {
+      const n = q.steps!.length;
+      const d = q.steps!.filter((x) => x.done).length;
+      extra = `<div class="ctr"><div class="meter"><i style="width:${pct(d, n)}%"></i></div><span class="ctr-n">${d}<em> / ${n}</em></span><button class="step plus wide" type="button" data-act="q-step" data-id="${id}">Step done</button></div>`;
+    }
     left = `<button class="tick" type="button" data-act="toggle" data-id="${id}" aria-pressed="${done}" aria-label="${done ? "Mark not done" : "Complete"}"><i></i></button>`;
   }
   return `<div class="q${done ? " done" : ""}" style="--cc:${cvar(q.cat)}">${left}${body}<span class="xp">+${q.xp}${q.kind === "counter" ? "<small>/step</small>" : "<small>XP</small>"}</span>${extra}</div>`;
@@ -138,9 +149,13 @@ function dueBit(q: Quest): string {
 }
 
 function renderMissions(): void {
-  const { stats: st, quests } = S.data;
+  const { stats: st } = S.data;
   const mods = S.data.prefs.modules;
+  // Later quests stay off the board until their date arrives or the quest they follow is done.
+  const quests = S.data.quests.filter((q) => !locked(q, S.data.quests));
+  const laterN = S.data.quests.length - quests.length;
   $("faith-duo").hidden = !mods.faith;
+  renderMorningCard();
   $("j-nudge").hidden = !mods.journal || journaledOn(S.data.journal);
   const vs = st.virtue;
   const doneV = vs.last === dkey();
@@ -192,7 +207,8 @@ function renderMissions(): void {
   $("active").innerHTML = active.length
     ? active.map(card).join("")
     : empty(none ? "Quests and tracked targets land here: one-off jobs, goals with a deadline, side projects." : "No active quests here. Add one with New mission.");
-  $("activeCount").textContent = active.length ? `${active.length} open` : "";
+  $("activeCount").textContent = [active.length ? `${active.length} open` : "", laterN ? `${laterN} later` : ""].filter(Boolean).join(" · ");
+  renderLater();
   $("doneSec").hidden = !done.length;
   $("done").innerHTML = done.slice(0, 15).map(card).join("");
   const cd = $("clearDone");
@@ -201,6 +217,23 @@ function renderMissions(): void {
   const rows = logRows();
   $("logSec").hidden = !rows;
   $("log").innerHTML = rows;
+}
+
+/** Habit ideas parked by the build cap, with the date the next slot opens. */
+function renderLater(): void {
+  const { later } = S.data.habits;
+  const el = $("later");
+  el.hidden = !later.length || !S.data.prefs.modules.rhythm;
+  if (el.hidden) return;
+  const slot = habitSlot(S.data.habits);
+  el.innerHTML =
+    `<div class="sec-h"><h2>Later</h2><span>${slot.open ? "A habit slot is open" : `Next habit slot opens ${shortD(slot.opensOn)}`}</span></div>` +
+    later
+      .map(
+        (x) =>
+          `<div class="later-i"><span>${esc(x.quest.title)}</span>${slot.open ? `<button class="mini go" type="button" data-act="later-add" data-id="${esc(x.id)}">Add now</button>` : ""}<button class="mini" type="button" data-act="later-drop" data-id="${esc(x.id)}">Remove</button></div>`,
+      )
+      .join("");
 }
 
 const empty = (msg: string, extra = "") => `<div class="empty"${extra}>${esc(msg)}</div>`;

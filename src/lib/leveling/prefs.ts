@@ -3,7 +3,7 @@
 import type { CatId } from "./types.js";
 import { CATS } from "./xp.js";
 
-export type ModuleId = "faith" | "journal" | "body" | "social" | "money";
+export type ModuleId = "faith" | "journal" | "body" | "social" | "money" | "rhythm";
 export type Unit = "kg" | "lb";
 
 export interface Prefs {
@@ -27,6 +27,7 @@ export const MODULES: { id: ModuleId; name: string; d: string }[] = [
   { id: "body", name: "Body", d: "Gym, cardio, steps, weight and meals" },
   { id: "social", name: "Social", d: "Posts, catch-ups and friend groups" },
   { id: "money", name: "Money", d: "Monthly ledger with good and bad calls" },
+  { id: "rhythm", name: "Daily Rhythm", d: "Morning sequence, evening debrief and weekly review" },
 ];
 
 export const DEFAULT_OUT_CATS = [
@@ -73,7 +74,7 @@ export function blankPrefs(currency = "$"): Prefs {
   return {
     currency,
     unit: "kg",
-    modules: { faith: true, journal: true, body: true, social: true, money: true },
+    modules: { faith: true, journal: true, body: true, social: true, money: true, rhythm: true },
     catNames: { ...GENERIC_NAMES },
     catOff: [],
     inCats: [...DEFAULT_IN_CATS],

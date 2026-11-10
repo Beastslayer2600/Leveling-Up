@@ -1,3 +1,4 @@
+import { CATS } from "./xp.js";
 import { describe, expect, it } from "vitest";
 import { visibleAch } from "./achievements.js";
 import { buildPrompt, digest, parseSuggestions } from "./coach.js";
@@ -36,8 +37,8 @@ describe("settings", () => {
     expect(activeCats(p).map((c) => c.id)).not.toContain("faith");
   });
   it("never leaves zero categories", () => {
-    const p = normalizePrefs({ catOff: ["clients", "admin", "training", "adjudication", "social", "money", "faith", "mind", "side"] }, false);
-    expect(activeCats(p).length).toBe(9);
+    const p = normalizePrefs({ catOff: CATS.map((c) => c.id) }, false);
+    expect(activeCats(p).length).toBe(CATS.length);
   });
   it("guesses a currency from the browser region", () => {
     expect(guessCurrency("en-ZA")).toBe("R");

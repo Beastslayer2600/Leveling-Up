@@ -2,7 +2,7 @@ import { ACH_BY, ACHIEVEMENT_XP, checkAchievements, freshAchievements } from "..
 import { blankData, normalize } from "../lib/leveling/data";
 import { dkey } from "../lib/leveling/dates";
 import { catName } from "../lib/leveling/prefs";
-import { applyAward, CAT } from "../lib/leveling/xp";
+import { applyAward, awardTotal, CAT } from "../lib/leveling/xp";
 import type { AwardSpec, Data } from "../lib/leveling/types";
 import { levelUp, toast, toastAch } from "./fx";
 
@@ -12,6 +12,12 @@ export const VIEWS: Tab[] = ["missions", "journal", "body", "social", "money", "
 /** Tabs this player has switched on. Missions and Character are always there. */
 export const enabledViews = (): Tab[] =>
   VIEWS.filter((v) => v === "missions" || v === "character" || S.data.prefs.modules[v]);
+
+/** Full-screen, one-step-at-a-time screens. Each has a stable address an iPhone Shortcut can open. */
+export type Focus = "morning" | "debrief" | "week";
+export const FOCUS_HASH: Record<Focus, string> = { morning: "today/morning", debrief: "today/debrief", week: "today/week" };
+export const focusFromHash = (): Focus | null =>
+  (Object.keys(FOCUS_HASH) as Focus[]).find((f) => FOCUS_HASH[f] === location.hash.slice(1).replace(/^\//, "")) || null;
 
 const KEY = "leveling-up.v1";
 const TAB_KEY = "leveling-up.tab";
@@ -30,6 +36,7 @@ function load(): Data {
 export const S = {
   data: load(),
   tab: "missions" as Tab,
+  focus: null as Focus | null,
   filter: "all",
   month: dkey().slice(0, 7),
   vSwap: 0,
@@ -70,7 +77,7 @@ export function setTab(t: Tab): void {
   } catch {
     /* tab memory is optional */
   }
-  if (location.hash.slice(1) !== t) history.replaceState(null, "", "#" + t);
+  if (!S.focus && location.hash.slice(1) !== t) history.replaceState(null, "", "#" + t);
 }
 
 export function initialTab(): Tab {
@@ -86,7 +93,7 @@ export function initialTab(): Tab {
 }
 
 /** Upsert a record in one of the collections. */
-export function put<K extends "quests" | "journal" | "workouts" | "social" | "money" | "meals" | "days">(
+export function put<K extends "quests" | "rhythm" | "journal" | "workouts" | "social" | "money" | "meals" | "days">(
   coll: K,
   obj: Data[K][number],
 ): void {
@@ -108,12 +115,13 @@ export const newId = () => "x" + Date.now().toString(36) + Math.random().toStrin
 
 /** Apply an XP change, then toast, level-up and event achievements. */
 export function award(spec: AwardSpec): void {
-  if (!spec.delta && !spec.mut) return;
+  const total = awardTotal(spec);
+  if (!total && !spec.mut) return;
   const r = applyAward(S.data.stats, spec);
   S.data.stats = r.stats;
   save();
-  if (!spec.quiet && spec.delta)
-    toast(`${spec.delta > 0 ? "+" : ""}${spec.delta} XP · ${CAT[spec.cat] ? catName(S.data.prefs, spec.cat) : spec.title}`, spec.delta > 0 ? "xp" : "");
+  if (!spec.quiet && total)
+    toast(`${total > 0 ? "+" : ""}${total} XP · ${CAT[spec.cat] ? catName(S.data.prefs, spec.cat) : spec.title}`, total > 0 ? "xp" : "");
   if (r.levelAfter > r.levelBefore) setTimeout(() => levelUp(r.levelAfter), 500);
   const fresh = freshAchievements(r.events, S.data.stats.ach);
   if (fresh.length) setTimeout(() => grant(fresh), 1300);

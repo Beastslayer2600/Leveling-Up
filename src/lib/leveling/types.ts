@@ -9,10 +9,25 @@ export type CatId =
   | "money"
   | "faith"
   | "mind"
-  | "side";
+  | "side"
+  | "vitality"
+  | "discipline"
+  | "emotional"
+  | "personal";
 
 export type Kind = "daily" | "quest" | "counter";
 export type Period = "none" | "week" | "month";
+
+/** One piece of a quest, about ten minutes of work. */
+export interface QuestStep {
+  title: string;
+  mins?: number;
+  done?: boolean;
+  /** Finishing this step leaves the quest waiting on someone else. */
+  waitingOn?: string;
+  /** This step ends in a choice the player makes. */
+  decision?: boolean;
+}
 
 export interface Quest {
   id: string;
@@ -33,6 +48,17 @@ export interface Quest {
   due?: string;
   starter?: boolean;
   coach?: boolean;
+  /** A main quest: offered first when picking the day's main quest. */
+  main?: boolean;
+  /** The next concrete action on this quest. With `steps`, the first unfinished step is used instead. */
+  nextStep?: string;
+  steps?: QuestStep[];
+  /** Blocked on someone else. Cleared when the next step is done. */
+  waitingOn?: string;
+  /** Hidden from the board until the quest with this id is finished. */
+  unlockAfter?: string;
+  /** Hidden from the board until this date (YYYY-MM-DD). */
+  startFrom?: string;
 }
 
 export interface SetRec {
@@ -209,8 +235,88 @@ export interface JournalEntry {
   xp: number;
 }
 
+/** Tomorrow's choices, made in the evening debrief so the morning needs no decisions. */
+export interface DayPlan {
+  office?: boolean;
+  /** "HH:MM" wake time for this one day, when it differs from the usual one. */
+  wakeTime?: string;
+  /** "HH:MM", office days only. */
+  leaveBy?: string;
+  breakfast?: string;
+  mainQuestId?: string;
+  mustDoIds?: string[];
+}
+
+/** One day's Morning Sequence progress. */
+export interface MorningRun {
+  /** Step id -> completion time (ms). */
+  steps: Record<string, number>;
+  /** Low-day mode: the quest is reduced to the low-day steps. */
+  low?: boolean;
+  /** When the room-reset countdown was started (ms). */
+  timerAt?: number | null;
+  /** When the sequence (full or low-day) was finished (ms). */
+  doneAt?: number | null;
+  /** Bonuses already paid. */
+  anchor?: boolean;
+  combo?: boolean;
+  xp: number;
+}
+
+/** The quick end-of-day ratings. Kept as a record; never scored. */
+export interface DailyRecord {
+  sleepHours?: number | null;
+  sleepQuality?: number | null;
+  mood?: number | null;
+  energy?: number | null;
+  irritability?: number | null;
+  focus?: number | null;
+  note?: string;
+}
+
+/** One day's Evening Debrief progress. */
+export interface DebriefRun {
+  /** Step id -> completion time (ms). */
+  steps: Record<string, number>;
+  /** Steps passed over. They earn nothing and cost nothing. */
+  skipped?: string[];
+  doneAt?: number | null;
+  xp: number;
+  /** Things done today that weren't logged anywhere else. */
+  extra?: string[];
+  feeling?: string;
+  cause?: string;
+  /** "Is anything still open?" */
+  open?: string;
+  prep?: Record<string, boolean>;
+}
+
+/** The daily rhythm for one calendar day. `id` is the date, so each day has one record. */
+export interface RhythmDay {
+  id: string;
+  date: string;
+  plan?: DayPlan;
+  morning: MorningRun;
+  debrief?: DebriefRun;
+  record?: DailyRecord;
+}
+
+/** A habit idea parked until the next slot opens. */
+export interface LaterHabit {
+  id: string;
+  at: number;
+  quest: Quest;
+}
+
+/** The build cap: when a recurring habit was last added, and the parked ideas. */
+export interface Habits {
+  lastAddAt: number;
+  later: LaterHabit[];
+}
+
 export interface Data {
   quests: Quest[];
+  rhythm: RhythmDay[];
   journal: JournalEntry[];
   workouts: Workout[];
   social: Social[];
@@ -221,6 +327,7 @@ export interface Data {
   coach: CoachState;
   sheet: Sheet;
   release: Release;
+  habits: Habits;
   /** What this player tracks and how it's labelled. */
   prefs: Prefs;
   /** Deleted record id -> deletion time (ms), so a deletion survives a sync merge. */
@@ -234,6 +341,8 @@ export interface AwardSpec {
   delta: number;
   title: string;
   cat: string;
+  /** Secondary shares of the same award, paid to other categories on top of `delta`. */
+  also?: { cat: string; delta: number }[];
   events?: string[];
   mut?: (st: Stats, events: string[]) => void;
   quiet?: boolean;
