@@ -13,6 +13,8 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Leveling Up</title>
+<!-- /today/morning, /today/debrief and /today/week are stable addresses: hand them to the matching screen. -->
+<script>(function () { var m = location.pathname.match(/^(.*\/)today\/(morning|debrief|week)\/?$/); if (m) location.replace(m[1] + "#today/" + m[2]); })();</script>
 </head>
 <body>
 <div class="app">
@@ -79,6 +81,13 @@
         <span class="nudge-go" data-icon="chevR"></span>
       </button>
 
+      <button class="nudge rhythm night" id="d-nudge" type="button" data-act="open-debrief" hidden>
+        <span class="nudge-i" data-icon="moon"></span>
+        <span class="nudge-t"><b id="d-nudge-t">Evening Debrief</b><small id="d-nudge-s"></small></span>
+        <span class="nudge-go" data-icon="chevR"></span>
+      </button>
+      <button class="linkbtn rhythm-link" id="w-link" type="button" data-act="open-week" hidden>Weekly review</button>
+
       <button class="nudge" id="j-nudge" type="button" data-tab="journal" hidden>
         <span class="nudge-i" data-icon="mic"></span>
         <span class="nudge-t"><b>How was your day?</b><small>Debrief in a voice note or a few lines · +15 XP</small></span>
@@ -125,6 +134,7 @@
       <section class="sec">
         <div class="sec-h"><h2>Daily Ops</h2><span id="dailyCount">Resets at midnight</span></div>
         <div class="list" id="daily"></div>
+        <div class="later" id="later" hidden></div>
       </section>
       <section class="sec">
         <div class="sec-h"><h2>Active Quests</h2><span id="activeCount"></span></div>
@@ -321,6 +331,8 @@
           <button class="btn ghost" type="button" id="d-export"><span data-icon="download"></span>Back up</button>
           <button class="btn ghost" type="button" id="d-import"><span data-icon="upload"></span>Restore</button>
           <input type="file" id="d-file" accept="application/json,.json" hidden>
+          <button class="btn ghost" type="button" id="d-seed"><span data-icon="plus"></span>Import missions</button>
+          <input type="file" id="d-seedfile" accept="application/json,.json" hidden>
         </div>
       </section>
     </div>
@@ -353,6 +365,7 @@
     </div>
     <fieldset class="fld"><legend id="q-diffL">Difficulty</legend><div class="seg" id="q-diff"></div></fieldset>
     <div class="fld" id="q-dueF"><label for="q-due">Due date (optional)</label><input class="in" id="q-due" type="date"></div>
+    <div class="cap" id="q-cap" hidden><p class="hint" id="q-cap-t"></p><button class="btn ghost" type="button" id="q-park">Park it in Later</button></div>
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="q-save">Add mission</button></div>
   </form>
 

@@ -2,7 +2,7 @@
    The system never punishes: nothing here ever takes XP away. */
 import { RHYTHM, hmToMins, type MorningStepDef } from "./config.js";
 import { daysAgoKey, dkey, parseD } from "./dates.js";
-import { closed } from "./missions.js";
+import { workable } from "./missions.js";
 import type { AwardSpec, DayPlan, Quest, RhythmDay } from "./types.js";
 
 const M = RHYTHM.morning;
@@ -11,9 +11,23 @@ export const blankDay = (date: string): RhythmDay => ({ id: date, date, morning:
 
 export const dayFor = (days: RhythmDay[], date: string): RhythmDay => days.find((d) => d.id === date) || blankDay(date);
 
+/**
+ * The whole sequence for a day. An office day (chosen in last night's debrief) has a shorter
+ * room reset and a sixth step, "Leave by HH:MM", after the Briefing.
+ */
+export function fullSteps(day: RhythmDay): MorningStepDef[] {
+  if (!day.plan?.office) return M.steps;
+  const leave = M.office.leaveStep;
+  return [
+    ...M.steps.map((s) => (s.timer ? { ...s, mins: M.office.roomResetMins } : s)),
+    { ...leave, title: day.plan.leaveBy ? `Leave by ${day.plan.leaveBy}` : "Leave" },
+  ];
+}
+
 /** The steps this day's sequence asks for, in order: all of them, or the low-day pair. */
 export function morningSteps(day: RhythmDay): MorningStepDef[] {
-  return day.morning.low ? M.steps.filter((s) => M.lowDaySteps.includes(s.id)) : M.steps;
+  const all = fullSteps(day);
+  return day.morning.low ? all.filter((s) => M.lowDaySteps.includes(s.id)) : all;
 }
 
 /** The step on screen now, or null once the sequence is finished. */
@@ -28,7 +42,7 @@ export type MorningStatus = "full" | "low" | "open";
 /** full: every step done. low: a low day with its steps done. open: neither (yet). */
 export function morningStatus(day: RhythmDay | undefined): MorningStatus {
   if (!day) return "open";
-  if (allDone(day, M.steps)) return "full";
+  if (allDone(day, fullSteps(day))) return "full";
   if (day.morning.low && allDone(day, morningSteps(day))) return "low";
   return "open";
 }
@@ -81,7 +95,7 @@ export function completeStep(day: RhythmDay, stepId: string, at: number): StepRe
     m.xp += M.wakeAnchor.xp;
     awards.push({ delta: M.wakeAnchor.xp, title: `${M.title}: On-time start`, cat: M.wakeAnchor.cat });
   }
-  if (!m.combo && allDone(next, M.steps)) {
+  if (!m.combo && allDone(next, fullSteps(next))) {
     const start = Math.min(...Object.values(m.steps));
     if (at - start <= M.combo.windowMins * 60000) {
       m.combo = true;
@@ -176,7 +190,7 @@ export interface Briefing {
 
 /** What the Briefing step shows. Works without a debrief: Home by default, and a short pick list. */
 export function briefing(day: RhythmDay, quests: Quest[], now: Date = new Date()): Briefing {
-  const open = quests.filter((q) => q.kind !== "daily" && !closed(q, now));
+  const open = quests.filter((q) => workable(q, quests, now));
   const byId = (id?: string) => open.find((q) => q.id === id) || null;
   const main = byId(day.plan?.mainQuestId);
   const mustDos = (day.plan?.mustDoIds || []).map(byId).filter((q): q is Quest => !!q);

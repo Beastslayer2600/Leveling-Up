@@ -27,7 +27,7 @@ export const MODULES: { id: ModuleId; name: string; d: string }[] = [
   { id: "body", name: "Body", d: "Gym, cardio, steps, weight and meals" },
   { id: "social", name: "Social", d: "Posts, catch-ups and friend groups" },
   { id: "money", name: "Money", d: "Monthly ledger with good and bad calls" },
-  { id: "rhythm", name: "Daily Rhythm", d: "Morning sequence, one step at a time" },
+  { id: "rhythm", name: "Daily Rhythm", d: "Morning sequence, evening debrief and weekly review" },
 ];
 
 export const DEFAULT_OUT_CATS = [

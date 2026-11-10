@@ -16,6 +16,13 @@ export interface MorningStepDef {
   timer?: boolean;
 }
 
+export interface DebriefStepDef {
+  id: string;
+  title: string;
+  hint: string;
+  xp: Partial<Record<CatId, number>>;
+}
+
 export const RHYTHM = {
   /** Wake anchor, seven days a week. The debrief can override it for a single day. */
   wakeTime: "08:00",
@@ -25,6 +32,8 @@ export const RHYTHM = {
   screensDownBeforeWakeMins: 510,
   /** A new recurring habit can join the daily rhythm once every this many days. */
   habitAddCooldownDays: 14,
+  /** A debrief done after midnight but before this time still belongs to the day before. */
+  dayStartsAt: "04:00",
 
   morning: {
     title: "Morning Sequence",
@@ -43,7 +52,16 @@ export const RHYTHM = {
     /** Bonus when step 1 is tapped within this many minutes of the wake time. Earlier counts too, back to `earliest`. */
     wakeAnchor: { xp: 15, cat: "discipline" as CatId, windowMins: 20, earliest: "04:00" },
     /** Office days: a shorter room reset, and a "Leave by" step after the Briefing. */
-    office: { roomResetMins: 5 },
+    office: {
+      roomResetMins: 5,
+      /** The sixth step, added after the Briefing. Its title is "Leave by HH:MM". */
+      leaveStep: { id: "leave", mins: 2, hint: "Keys, wallet, phone. Out the door.", xp: { discipline: 10 } as Partial<Record<CatId, number>> },
+      /** Minutes needed between waking and leaving. Wake time moves earlier only when the usual one leaves less than this. */
+      wakeToLeaveMins: 60,
+      /** Defaults for the debrief's office questions. */
+      defaultArrive: "08:30",
+      defaultTravelMins: 30,
+    },
     /** Shown on Food + daylight when no breakfast was chosen the night before. */
     breakfastFallback: "Whatever is quickest",
     /** Briefing fallback when the debrief was skipped: pick one main quest. */
@@ -59,11 +77,55 @@ export const RHYTHM = {
   },
 
   debrief: {
+    title: "Evening Debrief",
     targetMins: 10,
-    /** Paid across the steps on completion, split between these categories. */
-    xp: { discipline: 20, emotional: 20 } as Partial<Record<CatId, number>>,
-    /** Flat XP for logging the daily record, whatever the ratings are. */
-    recordXp: 5,
+    /**
+     * One screen per step. The six main steps add up to 40 XP (20 Discipline, 20 Emotional
+     * Awareness); a step that isn't done simply isn't paid. The daily record pays a flat 5
+     * for logging, whatever the ratings are.
+     */
+    steps: [
+      { id: "today", title: "Today", hint: "What got done. Add anything that's missing.", xp: { emotional: 5 } },
+      { id: "feeling", title: "One feeling", hint: "Name one feeling from today, and what caused it.", xp: { emotional: 15 } },
+      { id: "record", title: "Daily record", hint: "Quick taps. There are no right answers.", xp: { emotional: 5 } },
+      { id: "where", title: "Tomorrow", hint: "Home or Office?", xp: { discipline: 5 } },
+      { id: "quests", title: "Tomorrow's quests", hint: "One main quest and up to three must-dos.", xp: { discipline: 5 } },
+      { id: "prep", title: "Prep", hint: "Set the morning up now.", xp: { discipline: 5 } },
+      { id: "close", title: "Close", hint: "That's the day.", xp: { discipline: 5 } },
+    ] as DebriefStepDef[],
+    mustDoCount: 3,
+    feelings: ["Calm", "Content", "Proud", "Grateful", "Hopeful", "Tired", "Anxious", "Frustrated", "Sad", "Angry", "Lonely", "Overwhelmed"],
+    feelingPrompt: "One feeling from today, and what caused it",
+    sleepHourOptions: [4, 5, 6, 7, 8, 9, 10],
+    /** The 1-5 ratings on the daily record. */
+    ratings: [
+      { id: "sleepQuality", label: "Sleep quality" },
+      { id: "mood", label: "Mood" },
+      { id: "energy", label: "Energy" },
+      { id: "irritability", label: "Irritability" },
+      { id: "focus", label: "Focus" },
+    ],
+    prep: [
+      { id: "water", label: "Water bottle filled and by the bed" },
+      { id: "breakfast", label: "Breakfast chosen" },
+      { id: "clothes", label: "Clothes laid out", office: "Office clothes laid out" },
+    ],
+  },
+
+  review: {
+    days: 7,
+    /** Baseline: the average over this many days before the review window. */
+    baselineDays: 28,
+    /** Fewer logged days than this in the baseline window, and no baseline is shown. */
+    minBaselineDays: 5,
+    /** "Well below/above" baseline: this many hours of sleep, or this many points on a 1-5 rating. */
+    sleepHoursDelta: 1.5,
+    ratingDelta: 1,
+    /** Pattern note: this many short-sleep nights alongside raised energy or mood... */
+    shortSleepNights: 3,
+    /** ...or this many low-mood days. */
+    lowMoodDays: 5,
+    patternNote: "This is a change from your usual pattern. Worth mentioning to your psychiatrist.",
   },
 };
 

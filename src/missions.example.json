@@ -2,7 +2,7 @@
   {
     "id": "example-fix-file-1",
     "title": "Client A: submit the missing record of advice",
-    "note": "Copy this file to src/missions.local.json and put your own missions in it. That file is git-ignored. Categories: clients, admin, training, adjudication, social, money, faith, mind, side, vitality, discipline, emotional, personal. Kinds: quest, daily, counter. Optional: \"nextStep\" (the next concrete action) and \"main\": true for a main quest.",
+    "note": "Copy this file to src/missions.local.json and put your own missions in it. That file is git-ignored. Categories: clients, admin, training, adjudication, social, money, faith, mind, side, vitality, discipline, emotional, personal. Kinds: quest, daily, counter. Optional: \"main\": true, \"nextStep\" or \"steps\" (a list of {title, mins, waitingOn, decision}), \"unlockAfter\" (another mission id) and \"startFrom\" (a date).",
     "cat": "clients",
     "kind": "quest",
     "xp": 50

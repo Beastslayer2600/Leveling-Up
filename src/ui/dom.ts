@@ -55,6 +55,8 @@ export const ICON = {
   chevR: svg('<path d="M9 6l6 6-6 6"/>'),
   target: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>'),
   sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>'),
+  moon: svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+  check: svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>'),
   pause: svg('<path d="M9 5.5v13M15 5.5v13"/>'),
   x: svg('<path d="M6 6l12 12M18 6 6 18"/>'),
   download: svg('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),

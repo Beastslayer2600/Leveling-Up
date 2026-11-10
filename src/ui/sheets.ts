@@ -1,11 +1,12 @@
 import { SOC } from "../lib/leveling/data";
+import { addsHabit, habitSlot, parkHabit, useSlot } from "../lib/leveling/habits";
 import { activeCats, catName, weightRange } from "../lib/leveling/prefs";
 import { dkey } from "../lib/leveling/dates";
 import { findNewPbs, fmtSets, parseSets, workoutXp } from "../lib/leveling/training";
 import { PLAN_Q, RB_STEPS } from "../lib/leveling/virtues";
 import { DIFF, type DiffId } from "../lib/leveling/xp";
 import type { Meal, Money, Quest, Social, SocialKind, Workout } from "../lib/leveling/types";
-import { $, esc, fmtN, radio, radioVal, setVal, val } from "./dom";
+import { $, esc, fmtN, radio, radioVal, setVal, shortD, val } from "./dom";
 import { toast } from "./fx";
 import { fillSetup, initSetup } from "./customize";
 import { deleteJournal, fillJournal, saveJournalEdit } from "./journal";
@@ -120,11 +121,17 @@ export function initSheets(): void {
 
 /* ---------- mission ---------- */
 
+/** The quest being edited has its own step list, so the free-text next step doesn't apply. */
+let stepped = false;
+/** A new habit held back by the build cap, waiting to be parked. */
+let parked: Quest | null = null;
+
 function syncQ() {
   const k = val("q-kind");
   $("q-ctr").hidden = k !== "counter";
   $("q-dueF").hidden = k === "daily";
-  $("q-nextF").hidden = k === "daily";
+  $("q-nextF").hidden = k === "daily" || !!stepped;
+  $("q-cap").hidden = true;
   $("q-mainF").hidden = k === "daily";
   $("q-diffL").textContent = k === "counter" ? "XP per step" : "Difficulty";
 }
@@ -135,6 +142,8 @@ function fillMission(q: Quest | null) {
   setVal("q-title", q?.title);
   setVal("q-note", q?.note);
   setVal("q-next", q?.nextStep);
+  stepped = !!q?.steps?.length;
+  parked = null;
   $<HTMLInputElement>("q-main").checked = !!q?.main;
   const cats = activeCats(S.data.prefs);
   // Keep an existing mission's category in the list even if it's switched off now.
@@ -146,7 +155,11 @@ function fillMission(q: Quest | null) {
   setVal("q-period", q?.period || "none");
   setVal("q-due", q?.due);
   $<HTMLInputElement>("q-title").placeholder = "e.g. Finish the first draft";
-  radio("qdiff", (Object.keys(DIFF) as DiffId[]).find((k) => DIFF[k].xp === (q ? q.xp : 25)) || "std");
+  // A mission loaded from a file can carry an XP value outside the four tiers: keep it selectable.
+  document.querySelectorAll("#q-diff .custom").forEach((el) => el.remove());
+  const tier = (Object.keys(DIFF) as DiffId[]).find((k) => DIFF[k].xp === (q ? q.xp : 25));
+  if (q && !tier) $("q-diff").insertAdjacentHTML("beforeend", `<input type="radio" name="qdiff" id="qd-custom" class="custom" value="custom"><label for="qd-custom" class="custom">Custom<small>${q.xp}</small></label>`);
+  radio("qdiff", tier || (q ? "custom" : "std"));
   syncQ();
 }
 
@@ -167,6 +180,14 @@ function initMission() {
     .map(([k, v]) => `<input type="radio" name="qdiff" id="qd-${k}" value="${k}"><label for="qd-${k}">${v.label}<small>${v.xp}</small></label>`)
     .join("");
   $("q-kind").addEventListener("change", syncQ);
+  $("q-park").addEventListener("click", () => {
+    if (!parked) return;
+    S.data.habits = parkHabit(S.data.habits, parked, Date.now());
+    save();
+    closeSheet();
+    render();
+    toast("Parked in Later");
+  });
   $("f-mission").addEventListener("submit", (e) => {
     e.preventDefault();
     const title = val("q-title").trim();
@@ -179,7 +200,7 @@ function initMission() {
       note: val("q-note").trim(),
       cat: val("q-cat") as Quest["cat"],
       kind,
-      xp: DIFF[(radioVal("qdiff") as DiffId) || "std"].xp,
+      xp: radioVal("qdiff") === "custom" && prev ? prev.xp : DIFF[(radioVal("qdiff") as DiffId) || "std"].xp,
     } as Quest;
     delete q.starter;
     if (kind === "counter") {
@@ -190,6 +211,7 @@ function initMission() {
       delete q.target; delete q.period; delete q.progress; delete q.periodKey;
     }
     delete q.nextStep; delete q.main;
+    if (kind !== "quest") { delete q.steps; delete q.waitingOn; }
     if (kind === "daily") delete q.due;
     else {
       const d = val("q-due");
@@ -199,6 +221,18 @@ function initMission() {
       if ($<HTMLInputElement>("q-main").checked) q.main = true;
     }
     if (kind !== "quest") delete q.done;
+    // Build cap: a new recurring habit only joins the daily rhythm when a slot is open.
+    if (S.data.prefs.modules.rhythm && addsHabit(q, prev)) {
+      const slot = habitSlot(S.data.habits);
+      if (!slot.open) {
+        parked = prev ? null : q;
+        $("q-cap-t").textContent = `The next slot for a new daily habit opens on ${shortD(slot.opensOn)}.` + (prev ? " Until then this one can stay as it is." : " You can park this idea until then.");
+        $("q-park").hidden = !!prev;
+        $("q-cap").hidden = false;
+        return;
+      }
+      S.data.habits = useSlot(S.data.habits, Date.now());
+    }
     put("quests", q);
     closeSheet();
     render();

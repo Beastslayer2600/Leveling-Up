@@ -16,13 +16,15 @@ It's an installable web app (PWA) that works offline. It runs on a laptop and on
 
 ## Daily Rhythm
 
-The **Morning Sequence** is a daily quest of five fixed steps (Drink, Make bed, Room reset, Food + daylight, Briefing), shown one at a time on a full-screen page built for a phone. One tap completes a step.
+Two short daily quests, each shown one step at a time on a full-screen page built for a phone. Nothing in them ever takes XP away.
 
-- **Open it** from the card at the top of Missions, or directly at `#today/morning` (for example `http://localhost:5173/#today/morning`).
-- **Room reset** runs a countdown and completes by itself when it ends.
-- **Low day** reduces the quest to Drink + Make bed. It still counts as a kept day.
-- **Streak:** one missed day pauses it, two in a row reset it. Nothing ever takes XP away.
-- **Tuning:** every time, XP amount and threshold is in [`src/lib/leveling/config.ts`](src/lib/leveling/config.ts). The logic is in [`rhythm.ts`](src/lib/leveling/rhythm.ts).
+- **Morning Sequence** (`/today/morning`): Drink, Make bed, Room reset, Food + daylight, Briefing. One tap completes a step. Room reset runs a countdown and completes by itself. **Low day** reduces it to Drink + Make bed and still counts as a kept day. One missed day pauses the streak; two in a row reset it.
+- **Evening Debrief** (`/today/debrief`): what got done, one feeling (saved to the Journal), a quick daily record, Home or Office tomorrow, tomorrow's main quest and three must-dos, a prep checklist, and the wake and screens-down times. It makes every choice the morning needs. If it's skipped, the morning still works: Home by default, and a short list to pick a main quest from.
+- **Office days:** a 5-minute room reset and a sixth step, "Leave by HH:MM". The wake time moves earlier for that one day only when it has to.
+- **Weekly review** (`/today/week`): mornings kept, debriefs completed, first-tap times against the wake time, and seven-day lines for the daily record beside the previous four-week average. Information only. The record exports as CSV and the page prints.
+- **Build cap:** a new daily op can be added once every 14 days. Sooner than that, the app shows when the next slot opens and offers to park the idea in a Later list. Editing and removing is never blocked.
+- **iPhone Shortcuts:** point "when alarm is stopped, open URL" at `https://<your site>/today/morning`, and a 21:30 automation at `/today/debrief`.
+- **Tuning:** every time, XP amount and threshold is in [`src/lib/leveling/config.ts`](src/lib/leveling/config.ts).
 
 It can be switched off under **Character → Customize**.
 
@@ -32,6 +34,7 @@ It can be switched off under **Character → Customize**.
 - Ticking a mission pays its XP, and unticking it takes the XP back. Hitting a tracked target pays a 2× bonus.
 - A gym session pays 30 XP, plus 40 for each PB.
 - Each achievement pays 50 XP.
+- A quest with steps shows its first unfinished step as the next step. Finishing the last step completes the quest.
 - Each Morning Sequence step pays 10 XP (8 Vitality + 2 Discipline; the Briefing pays 10 Discipline). Starting within 20 minutes of the wake time adds 15, and finishing all five within 45 minutes adds 25.
 
 All of the game logic is pure and tested, in [`src/lib/leveling/`](src/lib/leveling).
@@ -47,7 +50,9 @@ npm run build    # static site in dist/
 
 ### Local missions
 
-To load a batch of missions into your local copy, copy `src/missions.example.json` to `src/missions.local.json` and edit it. `npm run dev` adds any missions from that file that aren't already in your log, and doesn't bring back ones you've deleted. A mission can carry `"main": true` and a `"nextStep"`. The file is git-ignored, so client names stay out of the repo, and the production build doesn't include it.
+To load a batch of missions into your local copy, copy `src/missions.example.json` to `src/missions.local.json` and edit it. `npm run dev` adds any missions from that file that aren't already in your log, and doesn't bring back ones you've deleted. A mission can carry `"main": true`, a `"nextStep"` or a list of `"steps"`, and `"unlockAfter"` / `"startFrom"` to stay off the board until later.
+
+The same file can be loaded on any device, including the deployed app, with **Character → Profile & data → Import missions**. The file is git-ignored, so client names stay out of the repo, and the production build doesn't include it.
 
 ## Install as an app
 

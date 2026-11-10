@@ -13,6 +13,7 @@ import {
   morningStatus,
   morningSteps,
   morningStreak,
+  fullSteps,
   pickMainQuest,
   setLowDay,
   startTimer,
@@ -20,29 +21,17 @@ import {
   timerEndsAt,
 } from "../lib/leveling/rhythm";
 import { awardTotal } from "../lib/leveling/xp";
+import { nextStepOf } from "../lib/leveling/missions";
 import type { Quest, RhythmDay } from "../lib/leveling/types";
 import { $, ICON, cvar, esc } from "./dom";
 import { toast } from "./fx";
-import { FOCUS_HASH, S, after, award, focusFromHash, put, render, type Focus } from "./state";
+import { debriefAct, debriefInput, renderDebrief, renderDebriefCard } from "./debrief";
+import { closeFocus, longDate, rhythmOn, shell } from "./focus";
+import { renderReview, reviewAct } from "./review";
+import { S, after, award, put, render } from "./state";
 
 const M = RHYTHM.morning;
 const today = (): RhythmDay => dayFor(S.data.rhythm, dkey());
-export const rhythmOn = () => S.data.prefs.modules.rhythm;
-
-export function openFocus(f: Focus): void {
-  if (!rhythmOn()) return;
-  S.focus = f;
-  if (focusFromHash() !== f) history.pushState(null, "", "#" + FOCUS_HASH[f]);
-  render();
-  window.scrollTo({ top: 0 });
-}
-
-export function closeFocus(): void {
-  if (!S.focus) return;
-  S.focus = null;
-  history.replaceState(null, "", "#" + S.tab);
-  render();
-}
 
 /* ---------- actions ---------- */
 
@@ -72,8 +61,6 @@ function act(a: string, id?: string): void {
   const day = today();
   const step = currentStep(day);
   switch (a) {
-    case "close":
-      return closeFocus();
     case "done":
       if (step) finishStep(step.id);
       break;
@@ -99,8 +86,16 @@ function act(a: string, id?: string): void {
 export function initRhythm(): void {
   $("focus").addEventListener("click", (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>("[data-r]");
-    if (b) act(b.dataset.r!, b.dataset.id);
+    if (!b) return;
+    if (b.dataset.r === "close") return closeFocus();
+    if (S.focus === "morning") act(b.dataset.r!, b.dataset.id);
+    else if (S.focus === "debrief") debriefAct(b.dataset.r!, b);
+    else if (S.focus === "week") reviewAct(b.dataset.r!);
   });
+  for (const ev of ["input", "change"] as const)
+    $("focus").addEventListener(ev, (e) => {
+      if (S.focus === "debrief") debriefInput(e.target as HTMLInputElement, ev === "change");
+    });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && S.focus && $("scrim").hidden) closeFocus();
   });
@@ -121,7 +116,7 @@ function streakChip(): string {
 }
 
 const questCard = (q: Quest, label: string) =>
-  `<div class="fx-card" style="--cc:${cvar(q.cat)}"><small>${label}</small><b>${esc(q.title)}</b>${q.nextStep ? `<span>Next: ${esc(q.nextStep)}</span>` : ""}</div>`;
+  `<div class="fx-card" style="--cc:${cvar(q.cat)}"><small>${label}</small><b>${esc(q.title)}</b>${nextStepOf(q) ? `<span>Next: ${esc(nextStepOf(q))}</span>` : ""}</div>`;
 
 function stepExtra(day: RhythmDay, id: string): { html: string; acts?: string } {
   if (id === "food") {
@@ -130,15 +125,15 @@ function stepExtra(day: RhythmDay, id: string): { html: string; acts?: string } 
   }
   if (id !== "briefing") return { html: "" };
   const b = briefing(day, S.data.quests);
-  const where = `<span class="fx-where">${b.office ? "Office day" : "Home day"}${day.plan?.leaveBy ? ` · leave by ${esc(day.plan.leaveBy)}` : ""}</span>`;
+  const where = `<span class="fx-where">${b.office ? "Office day" : "Home day"}${b.office && day.plan?.leaveBy ? ` · leave by ${esc(day.plan.leaveBy)}` : ""}</span>`;
   if (b.main) {
     const must = b.mustDos.length
-      ? `<div class="fx-card"><small>Must-dos</small><ol>${b.mustDos.map((q) => `<li>${esc(q.title)}${q.nextStep ? `<span>Next: ${esc(q.nextStep)}</span>` : ""}</li>`).join("")}</ol></div>`
+      ? `<div class="fx-card"><small>Must-dos</small><ol>${b.mustDos.map((q) => `<li>${esc(q.title)}${nextStepOf(q) ? `<span>Next: ${esc(nextStepOf(q))}</span>` : ""}</li>`).join("")}</ol></div>`
       : "";
     return { html: where + questCard(b.main, "Main quest") + must };
   }
   if (!b.pick.length) return { html: where + `<p class="fx-hint">No open quests yet. You can add one from Missions later.</p>` };
-  const xp = stepXp(M.steps.find((s) => s.id === id)!);
+  const xp = stepXp(fullSteps(day).find((s) => s.id === id)!);
   return {
     html:
       where +
@@ -146,7 +141,7 @@ function stepExtra(day: RhythmDay, id: string): { html: string; acts?: string } 
       b.pick
         .map(
           (q) =>
-            `<button type="button" class="fx-opt" data-r="pick" data-id="${esc(q.id)}" style="--cc:${cvar(q.cat)}"><b>${esc(q.title)}</b><span>${esc(q.nextStep ? "Next: " + q.nextStep : catName(S.data.prefs, q.cat))}</span></button>`,
+            `<button type="button" class="fx-opt" data-r="pick" data-id="${esc(q.id)}" style="--cc:${cvar(q.cat)}"><b>${esc(q.title)}</b><span>${esc(nextStepOf(q) ? "Next: " + nextStepOf(q) : catName(S.data.prefs, q.cat))}</span></button>`,
         )
         .join("") +
       "</div>",
@@ -157,7 +152,7 @@ function stepExtra(day: RhythmDay, id: string): { html: string; acts?: string } 
 function stepScreen(day: RhythmDay): string {
   const steps = morningSteps(day);
   const step = currentStep(day)!;
-  const i = steps.indexOf(step);
+  const i = steps.findIndex((s) => s.id === step.id);
   const xp = stepXp(step);
   const extra = stepExtra(day, step.id);
   const end = timerEndsAt(day);
@@ -214,15 +209,18 @@ export function renderFocus(): void {
   el.hidden = !S.focus;
   document.body.classList.toggle("focus-open", !!S.focus);
   if (!S.focus) return;
+  if (S.focus === "debrief") return void (el.innerHTML = renderDebrief());
+  if (S.focus === "week") return void (el.innerHTML = renderReview());
   const day = today();
   const steps = morningSteps(day);
-  const date = new Date().toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" });
-  el.innerHTML =
-    `<div class="fx"><header class="fx-top"><div><p class="kicker">${date}${day.morning.low ? " · Low day" : ""}</p><b>${M.title}</b></div>` +
-    `${streakChip()}<button class="fx-x" type="button" data-r="close" aria-label="Close">${ICON.x}</button></header>` +
-    `<div class="fx-pips" style="--n:${steps.length}">${steps.map((s) => `<i class="${day.morning.steps[s.id] ? "on" : s === currentStep(day) ? "cur" : ""}"></i>`).join("")}</div>` +
-    (currentStep(day) ? stepScreen(day) : doneScreen(day)) +
-    `</div>`;
+  const cur = currentStep(day);
+  el.innerHTML = shell({
+    kicker: longDate() + (day.morning.low ? " · Low day" : day.plan?.office ? " · Office day" : ""),
+    title: M.title,
+    right: streakChip(),
+    pips: steps.map((s) => (day.morning.steps[s.id] ? "on" : s.id === cur?.id ? "cur" : "")),
+    inner: cur ? stepScreen(day) : doneScreen(day),
+  });
   const end = timerEndsAt(day);
   if (end)
     tick = setInterval(() => {
@@ -245,10 +243,11 @@ export function renderMorningCard(): void {
   const st = streakText();
   let sub: string;
   if (step) {
-    const i = steps.indexOf(step);
+    const i = steps.findIndex((s) => s.id === step.id);
     sub = `${i ? `Step ${i + 1} of ${steps.length}` : "Start"}: ${step.title} · ${step.mins} min`;
   } else sub = `${morningStatus(day) === "low" ? "Low day" : "All steps"} · +${day.morning.xp} XP`;
   el.classList.toggle("done", !step);
   $("m-nudge-t").textContent = step ? M.title : `${M.title} done`;
   $("m-nudge-s").textContent = sub + (st ? ` · ${st}` : "");
+  renderDebriefCard();
 }

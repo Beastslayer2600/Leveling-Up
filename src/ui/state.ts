@@ -14,8 +14,8 @@ export const enabledViews = (): Tab[] =>
   VIEWS.filter((v) => v === "missions" || v === "character" || S.data.prefs.modules[v]);
 
 /** Full-screen, one-step-at-a-time screens. Each has a stable address an iPhone Shortcut can open. */
-export type Focus = "morning";
-export const FOCUS_HASH: Record<Focus, string> = { morning: "today/morning" };
+export type Focus = "morning" | "debrief" | "week";
+export const FOCUS_HASH: Record<Focus, string> = { morning: "today/morning", debrief: "today/debrief", week: "today/week" };
 export const focusFromHash = (): Focus | null =>
   (Object.keys(FOCUS_HASH) as Focus[]).find((f) => FOCUS_HASH[f] === location.hash.slice(1).replace(/^\//, "")) || null;
 
