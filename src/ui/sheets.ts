@@ -124,6 +124,8 @@ function syncQ() {
   const k = val("q-kind");
   $("q-ctr").hidden = k !== "counter";
   $("q-dueF").hidden = k === "daily";
+  $("q-nextF").hidden = k === "daily";
+  $("q-mainF").hidden = k === "daily";
   $("q-diffL").textContent = k === "counter" ? "XP per step" : "Difficulty";
 }
 
@@ -132,6 +134,8 @@ function fillMission(q: Quest | null) {
   $("q-save").textContent = q ? "Save" : "Add mission";
   setVal("q-title", q?.title);
   setVal("q-note", q?.note);
+  setVal("q-next", q?.nextStep);
+  $<HTMLInputElement>("q-main").checked = !!q?.main;
   const cats = activeCats(S.data.prefs);
   // Keep an existing mission's category in the list even if it's switched off now.
   const opts = q && !cats.some((c) => c.id === q.cat) ? [...cats, { id: q.cat }] : cats;
@@ -185,10 +189,14 @@ function initMission() {
     } else {
       delete q.target; delete q.period; delete q.progress; delete q.periodKey;
     }
+    delete q.nextStep; delete q.main;
     if (kind === "daily") delete q.due;
     else {
       const d = val("q-due");
       if (d) q.due = d; else delete q.due;
+      const next = val("q-next").trim();
+      if (next) q.nextStep = next;
+      if ($<HTMLInputElement>("q-main").checked) q.main = true;
     }
     if (kind !== "quest") delete q.done;
     put("quests", q);

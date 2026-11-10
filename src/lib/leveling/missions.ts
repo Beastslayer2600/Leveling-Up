@@ -109,7 +109,7 @@ export function kindLabel(q: Quest): string {
 
 /** A mission from a local seed file: the fields a player would type into the mission sheet. */
 export type SeedMission = Pick<Quest, "id" | "title" | "cat" | "kind" | "xp"> &
-  Partial<Pick<Quest, "note" | "due" | "target" | "period">>;
+  Partial<Pick<Quest, "note" | "due" | "target" | "period" | "main" | "nextStep">>;
 
 const KINDS: Quest["kind"][] = ["daily", "quest", "counter"];
 
@@ -142,6 +142,8 @@ export function seedMissions(
       created: now + i,
     };
     if (s.note) q.note = String(s.note).slice(0, 1000);
+    if (s.nextStep) q.nextStep = String(s.nextStep).slice(0, 200);
+    if (s.main === true && kind !== "daily") q.main = true;
     if (kind !== "daily" && s.due && /^\d{4}-\d{2}-\d{2}$/.test(String(s.due))) q.due = String(s.due);
     if (kind === "counter") {
       q.target = Math.max(1, Math.min(999, Math.round(Number(s.target) || 1)));

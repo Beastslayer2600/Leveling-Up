@@ -18,6 +18,10 @@ export const CATS: Category[] = [
   { id: "faith", name: "Faith", v: "--c-faith" },
   { id: "mind", name: "Mind", v: "--c-mind" },
   { id: "side", name: "Side Quests", v: "--c-side" },
+  { id: "vitality", name: "Vitality", v: "--c-vitality" },
+  { id: "discipline", name: "Discipline", v: "--c-discipline" },
+  { id: "emotional", name: "Emotional Awareness", v: "--c-emotional" },
+  { id: "personal", name: "Personal", v: "--c-personal" },
 ];
 export const CAT: Record<string, Category> = Object.fromEntries(CATS.map((c) => [c.id, c]));
 
@@ -77,6 +81,9 @@ export const blankStats = (): Stats => ({
   events: {},
 });
 
+/** Everything one award pays: the primary amount plus any secondary shares. */
+export const awardTotal = (spec: AwardSpec) => spec.delta + (spec.also || []).reduce((s, a) => s + a.delta, 0);
+
 export interface AwardResult {
   stats: Stats;
   /** Event-based achievement ids triggered by this award (not yet filtered). */
@@ -88,14 +95,18 @@ export interface AwardResult {
 /**
  * Apply one XP change. Pure: returns a new Stats.
  * Updates total + category XP, today's tally, the streak, the XP log, and
- * collects time-of-day / tally achievements.
+ * collects time-of-day / tally achievements. Secondary shares (`also`) count
+ * towards the total and land in their own categories, under one log entry.
  */
 export function applyAward(prev: Stats, spec: AwardSpec, now: Date = new Date()): AwardResult {
   const st: Stats = structuredClone({ ...blankStats(), ...prev });
-  const { delta, title, cat } = spec;
+  const { title, cat } = spec;
+  const also = spec.also || [];
+  const delta = awardTotal(spec);
   const levelBefore = levelOf(st.xp, PLAYER_BASE).level;
   st.xp = Math.max(0, st.xp + delta);
-  st.cat[cat] = Math.max(0, (st.cat[cat] || 0) + delta);
+  st.cat[cat] = Math.max(0, (st.cat[cat] || 0) + spec.delta);
+  for (const a of also) st.cat[a.cat] = Math.max(0, (st.cat[a.cat] || 0) + a.delta);
   const t = dkey(now);
   if (st.dayKey !== t) {
     st.dayKey = t;
@@ -117,8 +128,9 @@ export function applyAward(prev: Stats, spec: AwardSpec, now: Date = new Date())
       if (h < 4) events.push("nightowl");
       else if (h < 6) events.push("earlybird");
       if (st.dayXp === 100) events.push("deadeye");
-      if (CAT[cat]) {
-        st.dayCats = [...new Set([...st.dayCats, cat])];
+      const paid = [cat, ...also.map((a) => a.cat)].filter((c) => CAT[c]);
+      if (paid.length) {
+        st.dayCats = [...new Set([...st.dayCats, ...paid])];
         if (st.dayCats.length >= 6) events.push("renaissance");
       }
     }

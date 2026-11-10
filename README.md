@@ -14,12 +14,25 @@ It's an installable web app (PWA) that works offline. It runs on a laptop and on
 - **Money:** a monthly ledger, the share of good calls and spending by category.
 - **Character:** attributes that grow from XP, your current chapter, skills, abilities, achievements and backup/restore.
 
+## Daily Rhythm
+
+The **Morning Sequence** is a daily quest of five fixed steps (Drink, Make bed, Room reset, Food + daylight, Briefing), shown one at a time on a full-screen page built for a phone. One tap completes a step.
+
+- **Open it** from the card at the top of Missions, or directly at `#today/morning` (for example `http://localhost:5173/#today/morning`).
+- **Room reset** runs a countdown and completes by itself when it ends.
+- **Low day** reduces the quest to Drink + Make bed. It still counts as a kept day.
+- **Streak:** one missed day pauses it, two in a row reset it. Nothing ever takes XP away.
+- **Tuning:** every time, XP amount and threshold is in [`src/lib/leveling/config.ts`](src/lib/leveling/config.ts). The logic is in [`rhythm.ts`](src/lib/leveling/rhythm.ts).
+
+It can be switched off under **Character → Customize**.
+
 ## Rules
 
 - Player levels cost 100 × L XP to go from level L to L+1. Category levels cost 50 × L.
 - Ticking a mission pays its XP, and unticking it takes the XP back. Hitting a tracked target pays a 2× bonus.
 - A gym session pays 30 XP, plus 40 for each PB.
 - Each achievement pays 50 XP.
+- Each Morning Sequence step pays 10 XP (8 Vitality + 2 Discipline; the Briefing pays 10 Discipline). Starting within 20 minutes of the wake time adds 15, and finishing all five within 45 minutes adds 25.
 
 All of the game logic is pure and tested, in [`src/lib/leveling/`](src/lib/leveling).
 
@@ -34,7 +47,7 @@ npm run build    # static site in dist/
 
 ### Local missions
 
-To load a batch of missions into your local copy, copy `src/missions.example.json` to `src/missions.local.json` and edit it. `npm run dev` adds any missions from that file that aren't already in your log, and doesn't bring back ones you've deleted. The file is git-ignored, so client names stay out of the repo, and the production build doesn't include it.
+To load a batch of missions into your local copy, copy `src/missions.example.json` to `src/missions.local.json` and edit it. `npm run dev` adds any missions from that file that aren't already in your log, and doesn't bring back ones you've deleted. A mission can carry `"main": true` and a `"nextStep"`. The file is git-ignored, so client names stay out of the repo, and the production build doesn't include it.
 
 ## Install as an app
 

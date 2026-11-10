@@ -2,7 +2,7 @@ import { normalize } from "./data.js";
 import { applyEvent, EVENT_TYPES } from "./events.js";
 import type { Data, Stats } from "./types.js";
 
-const COLLS = ["quests", "journal", "workouts", "social", "money", "meals", "days"] as const;
+const COLLS = ["quests", "rhythm", "journal", "workouts", "social", "money", "meals", "days"] as const;
 
 type Rec = { id: string; u?: number };
 

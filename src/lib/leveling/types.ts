@@ -9,7 +9,11 @@ export type CatId =
   | "money"
   | "faith"
   | "mind"
-  | "side";
+  | "side"
+  | "vitality"
+  | "discipline"
+  | "emotional"
+  | "personal";
 
 export type Kind = "daily" | "quest" | "counter";
 export type Period = "none" | "week" | "month";
@@ -33,6 +37,10 @@ export interface Quest {
   due?: string;
   starter?: boolean;
   coach?: boolean;
+  /** A main quest: offered first when picking the day's main quest. */
+  main?: boolean;
+  /** The next concrete action on this quest. */
+  nextStep?: string;
 }
 
 export interface SetRec {
@@ -209,8 +217,45 @@ export interface JournalEntry {
   xp: number;
 }
 
+/** Tomorrow's choices, made in the evening debrief so the morning needs no decisions. */
+export interface DayPlan {
+  office?: boolean;
+  /** "HH:MM" wake time for this one day, when it differs from the usual one. */
+  wakeTime?: string;
+  /** "HH:MM", office days only. */
+  leaveBy?: string;
+  breakfast?: string;
+  mainQuestId?: string;
+  mustDoIds?: string[];
+}
+
+/** One day's Morning Sequence progress. */
+export interface MorningRun {
+  /** Step id -> completion time (ms). */
+  steps: Record<string, number>;
+  /** Low-day mode: the quest is reduced to the low-day steps. */
+  low?: boolean;
+  /** When the room-reset countdown was started (ms). */
+  timerAt?: number | null;
+  /** When the sequence (full or low-day) was finished (ms). */
+  doneAt?: number | null;
+  /** Bonuses already paid. */
+  anchor?: boolean;
+  combo?: boolean;
+  xp: number;
+}
+
+/** The daily rhythm for one calendar day. `id` is the date, so each day has one record. */
+export interface RhythmDay {
+  id: string;
+  date: string;
+  plan?: DayPlan;
+  morning: MorningRun;
+}
+
 export interface Data {
   quests: Quest[];
+  rhythm: RhythmDay[];
   journal: JournalEntry[];
   workouts: Workout[];
   social: Social[];
@@ -234,6 +279,8 @@ export interface AwardSpec {
   delta: number;
   title: string;
   cat: string;
+  /** Secondary shares of the same award, paid to other categories on top of `delta`. */
+  also?: { cat: string; delta: number }[];
   events?: string[];
   mut?: (st: Stats, events: string[]) => void;
   quiet?: boolean;

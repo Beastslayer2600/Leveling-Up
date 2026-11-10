@@ -20,6 +20,10 @@ export const ATTRS = [
   { name: "Hustle", cats: ["clients", "side"], v: "--c-clients" },
   { name: "Wealth", cats: ["money"], v: "--c-money" },
   { name: "Mastery", cats: ["adjudication"], v: "--c-adjudication" },
+  { name: "Vitality", cats: ["vitality"], v: "--c-vitality" },
+  { name: "Discipline", cats: ["discipline"], v: "--c-discipline" },
+  { name: "Awareness", cats: ["emotional"], v: "--c-emotional" },
+  { name: "Identity", cats: ["personal"], v: "--c-personal" },
 ];
 
 export const blankSheet = (): Sheet => ({
@@ -43,6 +47,7 @@ const STARTERS: Omit<Quest, "id" | "created">[] = [
 export function blankData(now = Date.now()): Data {
   return {
     quests: STARTERS.map((q, i) => ({ ...q, id: "ex" + i, starter: true, created: now + i })),
+    rhythm: [],
     journal: [],
     workouts: [],
     social: [],
@@ -65,6 +70,7 @@ export function normalize(raw: unknown): Data {
   const arr = <T>(x: T[] | undefined) => (Array.isArray(x) ? x : []);
   return {
     quests: arr(d.quests),
+    rhythm: arr(d.rhythm),
     journal: arr(d.journal),
     workouts: arr(d.workouts),
     social: arr(d.social),

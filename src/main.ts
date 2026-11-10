@@ -19,9 +19,10 @@ import type { Quest } from "./lib/leveling/types";
 import { $, ICON } from "./ui/dom";
 import { toast } from "./ui/fx";
 import { initJournal } from "./ui/journal";
+import { closeFocus, initRhythm, openFocus } from "./ui/rhythm";
 import { askCoach, initSync } from "./ui/sync";
 import { closeSheet, initSheets, openCommitMission, openEntry, openSheet } from "./ui/sheets";
-import { S, after, award, drop, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
+import { S, after, award, drop, focusFromHash, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
 import { coachEnabled, render, renderNav } from "./ui/views";
 
 onRender(render);
@@ -33,9 +34,11 @@ document.querySelectorAll<HTMLElement>("[data-icon]").forEach((el) => {
 });
 
 S.tab = initialTab();
+S.focus = focusFromHash();
 renderNav();
 initSheets();
 initJournal();
+initRhythm();
 
 /* ---------- missions ---------- */
 
@@ -195,6 +198,7 @@ document.addEventListener("click", (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>("[data-act],[data-tab],[data-fab]");
   if (!b) return;
   if (b.dataset.tab) {
+    if (S.focus) closeFocus();
     setTab(b.dataset.tab as Tab);
     render();
     window.scrollTo({ top: 0 });
@@ -233,10 +237,14 @@ document.addEventListener("click", (e) => {
       S.data.release = { ...S.data.release, days: {}, cycles: (S.data.release.cycles || 0) + 1 };
       save(); render(); break;
     case "rr-commit": openCommitMission(); break;
+    case "open-morning": openFocus("morning"); break;
   }
 });
 
 window.addEventListener("hashchange", () => {
+  const f = focusFromHash();
+  if (f !== S.focus) { S.focus = f; closeSheet(); render(); }
+  if (f) return;
   const t = initialTab();
   if (t !== S.tab) { S.tab = t; closeSheet(); render(); }
 });

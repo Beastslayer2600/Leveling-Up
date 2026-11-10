@@ -9,6 +9,7 @@ import { CAT, CATEGORY_BASE, PLAYER_BASE, levelOf, liveStreak, rankOf } from "..
 import type { Quest } from "../lib/leveling/types";
 import { journaledOn } from "../lib/leveling/journal";
 import { renderJournal } from "./journal";
+import { renderFocus, renderMorningCard, settleTimer } from "./rhythm";
 import { renderMode, sync } from "./sync";
 import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, setCurrency, shortD, sumBy } from "./dom";
 import { S, VIEWS, enabledViews, type Tab } from "./state";
@@ -54,6 +55,7 @@ function applyPrefs(): void {
 
 export function render(): void {
   applyPrefs();
+  settleTimer();
   const st = S.data.stats;
   const L = levelOf(st.xp, PLAYER_BASE);
   const t = dkey();
@@ -84,6 +86,7 @@ export function render(): void {
 
   renderHudSide();
   ({ missions: renderMissions, journal: renderJournal, body: renderBody, social: renderSocial, money: renderMoney, character: renderCharacter })[S.tab]();
+  renderFocus();
 }
 
 function logRows(): string {
@@ -113,8 +116,8 @@ function renderHudSide(): void {
 function card(q: Quest): string {
   const done = isDone(q);
   const id = esc(q.id);
-  const meta = `<div class="meta"><span class="cat">${esc(cn(CAT[q.cat] ? q.cat : "side"))}</span><span>${kindLabel(q)}</span>${dueBit(q)}${q.starter ? '<span class="tag">Starter</span>' : ""}${q.coach ? '<span class="tag">Coach</span>' : ""}</div>`;
-  const body = `<button class="q-body" type="button" data-act="edit-q" data-id="${id}"><div class="q-title">${esc(q.title)}</div>${q.note ? `<div class="q-note">${esc(q.note)}</div>` : ""}${meta}</button>`;
+  const meta = `<div class="meta"><span class="cat">${esc(cn(CAT[q.cat] ? q.cat : "side"))}</span><span>${kindLabel(q)}</span>${dueBit(q)}${q.main ? '<span class="tag main">Main</span>' : ""}${q.starter ? '<span class="tag">Starter</span>' : ""}${q.coach ? '<span class="tag">Coach</span>' : ""}</div>`;
+  const body = `<button class="q-body" type="button" data-act="edit-q" data-id="${id}"><div class="q-title">${esc(q.title)}</div>${q.note ? `<div class="q-note">${esc(q.note)}</div>` : ""}${q.nextStep && !done ? `<div class="q-next">Next: ${esc(q.nextStep)}</div>` : ""}${meta}</button>`;
   let left: string;
   let extra = "";
   if (q.kind === "counter") {
@@ -141,6 +144,7 @@ function renderMissions(): void {
   const { stats: st, quests } = S.data;
   const mods = S.data.prefs.modules;
   $("faith-duo").hidden = !mods.faith;
+  renderMorningCard();
   $("j-nudge").hidden = !mods.journal || journaledOn(S.data.journal);
   const vs = st.virtue;
   const doneV = vs.last === dkey();
