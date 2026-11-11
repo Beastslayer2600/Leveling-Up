@@ -1,4 +1,5 @@
 import { blankPrefs, guessCurrency, normalizePrefs } from "./prefs.js";
+import { normalizeFocusPrefs, normalizeRun } from "./session.js";
 import { blankRelease } from "./virtues.js";
 import { blankStats } from "./xp.js";
 import type { Data, Quest, Sheet } from "./types.js";
@@ -49,6 +50,9 @@ export function blankData(now = Date.now()): Data {
     quests: STARTERS.map((q, i) => ({ ...q, id: "ex" + i, starter: true, created: now + i })),
     rhythm: [],
     journal: [],
+    focusSlots: [],
+    focusRun: null,
+    focusPrefs: normalizeFocusPrefs(undefined),
     workouts: [],
     social: [],
     money: [],
@@ -73,6 +77,9 @@ export function normalize(raw: unknown): Data {
     quests: arr(d.quests),
     rhythm: arr(d.rhythm),
     journal: arr(d.journal),
+    focusSlots: arr(d.focusSlots),
+    focusRun: normalizeRun(d.focusRun),
+    focusPrefs: normalizeFocusPrefs(d.focusPrefs),
     workouts: arr(d.workouts),
     social: arr(d.social),
     money: arr(d.money),

@@ -22,6 +22,7 @@ import { toast } from "./ui/fx";
 import { initJournal } from "./ui/journal";
 import { closeFocus, openFocus } from "./ui/focus";
 import { initRhythm } from "./ui/rhythm";
+import { initSession, openSession } from "./ui/session";
 import { askCoach, initSync } from "./ui/sync";
 import { closeSheet, initSheets, openCommitMission, openEntry, openSheet } from "./ui/sheets";
 import { S, after, award, drop, focusFromHash, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
@@ -41,6 +42,7 @@ renderNav();
 initSheets();
 initJournal();
 initRhythm();
+initSession();
 
 /* ---------- missions ---------- */
 
@@ -270,10 +272,12 @@ document.addEventListener("click", (e) => {
     case "open-morning": openFocus("morning"); break;
     case "open-debrief": openFocus("debrief"); break;
     case "open-week": openFocus("week"); break;
+    case "open-session": openSession(); break;
   }
 });
 
 window.addEventListener("hashchange", () => {
+  if (location.hash === "#today/focus") return openSession();
   const f = focusFromHash();
   if (f !== S.focus) { S.focus = f; closeSheet(); render(); }
   if (f) return;
@@ -282,8 +286,10 @@ window.addEventListener("hashchange", () => {
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
 
+const startInSession = location.hash === "#today/focus";
 render();
 setTab(S.tab);
+if (startInSession) openSession();
 after();
 // First run: once we know whose log this is, offer setup so the app fits this player.
 void initSync(() => {

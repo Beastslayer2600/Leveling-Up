@@ -314,10 +314,78 @@ export interface Habits {
   later: LaterHabit[];
 }
 
+export type EarlyBreak = "shorten" | "minimum";
+
+/** Focus Sessions settings, kept in the log so they sync. */
+export interface FocusPrefs {
+  /** Planned work minutes per slot. */
+  workMin: number;
+  /** Early finish: shorten the break in proportion, or keep the planned break as a minimum. */
+  earlyBreak: EarlyBreak;
+  /** Labels from the last session, offered again next time. */
+  labels: string[];
+}
+
+/** One finished work slot, with its break. Saved forever; history is built from these. */
+export interface FocusSlot {
+  id: string;
+  /** The session (FocusRun.id) this slot belongs to. */
+  run: string;
+  /** 0-based position in the session. */
+  idx: number;
+  /** Local date (YYYY-MM-DD) the slot finished. */
+  date: string;
+  label: string;
+  plannedMs: number;
+  actualMs: number;
+  /** Time worked past the planned block. */
+  overtimeMs: number;
+  /** The break the rule gave for this much work. */
+  breakPlannedMs: number;
+  /** Break actually taken (0 if skipped straight away). */
+  breakTakenMs: number;
+  breakSkipped: boolean;
+  startedAt: number;
+  endedAt: number;
+  xp: number;
+  u?: number;
+}
+
+/** The session in progress, or just finished and waiting on its summary. Timing is all timestamps. */
+export interface FocusRun {
+  id: string;
+  startedAt: number;
+  /** Planned work per slot (ms), fixed when the session starts. */
+  workMs: number;
+  earlyBreak: EarlyBreak;
+  labels: string[];
+  /** Slot in progress (0-based). */
+  slot: number;
+  stage: "work" | "break" | "summary";
+  /** When the current stage began. Pauses never move this: they add to pausedMs instead. */
+  stageStart: number;
+  /** Set while paused. */
+  pausedAt?: number;
+  /** Paused time inside the current stage. */
+  pausedMs: number;
+  /** Planned length of the current break (0 outside a break). */
+  breakMs: number;
+  /** Saved slot record per slot, or null until it finishes. */
+  slotIds: (string | null)[];
+  /** Alerts already played, e.g. "w0" (work 1 ended), "b0" (break 1 ended). */
+  alerted: string[];
+  endedAt?: number;
+  /** Bonus XP paid for finishing every slot. */
+  bonusXp: number;
+}
+
 export interface Data {
   quests: Quest[];
   rhythm: RhythmDay[];
   journal: JournalEntry[];
+  focusSlots: FocusSlot[];
+  focusRun: FocusRun | null;
+  focusPrefs: FocusPrefs;
   workouts: Workout[];
   social: Social[];
   money: Money[];

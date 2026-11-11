@@ -93,7 +93,7 @@ export function initialTab(): Tab {
 }
 
 /** Upsert a record in one of the collections. */
-export function put<K extends "quests" | "rhythm" | "journal" | "workouts" | "social" | "money" | "meals" | "days">(
+export function put<K extends "quests" | "rhythm" | "journal" | "focusSlots" | "workouts" | "social" | "money" | "meals" | "days">(
   coll: K,
   obj: Data[K][number],
 ): void {

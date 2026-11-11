@@ -140,3 +140,30 @@ export function minsToHm(mins: number): string {
   const m = ((Math.round(mins) % 1440) + 1440) % 1440;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 }
+
+/* Focus Sessions: three slots of work, each followed by a break worth half the work actually done. */
+export const SESSION = {
+  slots: 3,
+  /** Default planned work per slot, and the range the setup screen allows. */
+  workMin: 20,
+  workMinRange: [5, 60] as [number, number],
+  /** Break = actual work x this. 0.5 is the one-to-two ratio: 20 min of work earns a 10 min break. */
+  breakRatio: 0.5,
+  /** Breaks are rounded to the nearest this. */
+  roundMs: 30_000,
+  /** What an early finish does to the break by default: "shorten" it in proportion, or keep the planned "minimum". */
+  earlyBreak: "shorten" as "shorten" | "minimum",
+  defaultLabels: ["Admin", "Content", "Outreach"],
+  /** Category that gets the XP (Mind is the Focus attribute). */
+  cat: "mind" as CatId,
+  /** XP for a slot worked to its planned time. Shorter work pays in proportion; overtime doesn't pay extra. */
+  slotXp: 20,
+  /** Bonus for finishing every slot, if each reached this share of its planned time. */
+  bonusXp: 25,
+  bonusMinShare: 0.5,
+  /** Ending a session in the middle of a slot discards that slot if it's shorter than this. */
+  minRecordMs: 10_000,
+  /** An alert is played only if the boundary passed this recently; otherwise it is reported quietly. */
+  alertLiveMs: 5_000,
+  maxLabel: 24,
+};

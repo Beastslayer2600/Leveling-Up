@@ -88,6 +88,13 @@
       </button>
       <button class="linkbtn rhythm-link" id="w-link" type="button" data-act="open-week" hidden>Weekly review</button>
 
+      <button class="nudge fs-card" id="fs-card" type="button" data-act="open-session">
+        <span class="nudge-i" data-icon="timer"></span>
+        <span class="nudge-t"><b id="fs-card-t">Focus Session</b><small id="fs-card-s"></small></span>
+        <span class="fs-card-k" id="fs-card-k"></span>
+        <span class="nudge-go" data-icon="chevR"></span>
+      </button>
+
       <button class="nudge" id="j-nudge" type="button" data-tab="journal" hidden>
         <span class="nudge-i" data-icon="mic"></span>
         <span class="nudge-t"><b>How was your day?</b><small>Debrief in a voice note or a few lines · +15 XP</small></span>
@@ -532,6 +539,18 @@
 </div>
 
 <div class="focus" id="focus" role="dialog" aria-modal="true" aria-labelledby="fx-title" hidden></div>
+
+<div class="fs" id="fsession" hidden role="dialog" aria-modal="true" aria-label="Focus session">
+  <div class="fs-in">
+    <header class="fs-h">
+      <div class="fs-hl"><p class="kicker" id="fs-kicker">Focus Session</p><div class="fs-pips" id="fs-pips"></div></div>
+      <button class="fs-hbtn" type="button" id="fs-history" data-fs="history"></button>
+      <button class="x" type="button" data-fs="close" aria-label="Close">×</button>
+    </header>
+    <div class="fs-body" id="fs-body"></div>
+    <datalist id="fs-labels"></datalist>
+  </div>
+</div>
 
 <div class="auth" id="auth" hidden>
   <form class="auth-card" id="auth-form" autocomplete="on">

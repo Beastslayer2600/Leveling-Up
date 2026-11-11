@@ -28,6 +28,17 @@ Two short daily quests, each shown one step at a time on a full-screen page buil
 
 It can be switched off under **Character → Customize**.
 
+## Focus Sessions
+
+Open **Focus Session** from the Missions tab (or go to `#today/focus`). A session is three blocks of work, 20 minutes each by default. Before it starts you name what each block is for, for example Admin, Content or Outreach, and you can rename any block at any time.
+
+- **Overtime:** when a work block reaches zero the clock keeps counting up. Tap **Finish** when you're really done.
+- **Breaks:** a break is half the work you actually did, to the nearest 30 seconds. 20 minutes of work earns a 10 minute break and 30 earns 15. The next block still plans 20 minutes. If you finish early, the setting decides whether the break shortens in proportion or stays at the planned minimum.
+- **Controls:** pause and resume, finish early, skip the break, end the session. A sound and a vibration mark the end of each work block and each break, and the screen always names the phase: Work, Overtime, Break or Break over.
+- **Saved:** every finished block keeps its label, planned and actual time, overtime and break taken. The summary shows total focused time, per-task totals and overtime, and History shows daily and weekly totals.
+- **XP:** each block pays up to 20 XP to Mind (in proportion to the time worked, nothing extra for overtime), plus a 25 XP bonus for completing all three blocks. Tune every number in `src/lib/leveling/config.ts`.
+- **Accurate in the background:** the timer stores timestamps and works the time out from the clock whenever it looks, so a locked screen or a background tab can't make it drift. Sounds and vibration only play while the app is awake, so when you come back after a boundary has passed it tells you how long ago it ended.
+
 ## Rules
 
 - Player levels cost 100 × L XP to go from level L to L+1. Category levels cost 50 × L.

@@ -11,6 +11,7 @@ import type { Quest } from "../lib/leveling/types";
 import { journaledOn } from "../lib/leveling/journal";
 import { renderJournal } from "./journal";
 import { renderFocus, renderMorningCard, settleTimer } from "./rhythm";
+import { renderSession } from "./session";
 import { renderMode, sync } from "./sync";
 import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, setCurrency, shortD, sumBy } from "./dom";
 import { S, VIEWS, enabledViews, type Tab } from "./state";
@@ -88,6 +89,7 @@ export function render(): void {
   renderHudSide();
   ({ missions: renderMissions, journal: renderJournal, body: renderBody, social: renderSocial, money: renderMoney, character: renderCharacter })[S.tab]();
   renderFocus();
+  renderSession();
 }
 
 function logRows(): string {
