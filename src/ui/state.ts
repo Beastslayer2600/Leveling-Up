@@ -6,8 +6,8 @@ import { applyAward, awardTotal, CAT } from "../lib/leveling/xp";
 import type { AwardSpec, Data } from "../lib/leveling/types";
 import { levelUp, toast, toastAch } from "./fx";
 
-export type Tab = "missions" | "journal" | "body" | "social" | "money" | "character";
-export const VIEWS: Tab[] = ["missions", "journal", "body", "social", "money", "character"];
+export type Tab = "missions" | "journal" | "body" | "social" | "money" | "skills" | "character";
+export const VIEWS: Tab[] = ["missions", "journal", "body", "social", "money", "skills", "character"];
 
 /** Tabs this player has switched on. Missions and Character are always there. */
 export const enabledViews = (): Tab[] =>
@@ -93,7 +93,7 @@ export function initialTab(): Tab {
 }
 
 /** Upsert a record in one of the collections. */
-export function put<K extends "quests" | "rhythm" | "journal" | "focusSlots" | "workouts" | "social" | "money" | "meals" | "days">(
+export function put<K extends "quests" | "pursuits" | "practice" | "rhythm" | "journal" | "focusSlots" | "workouts" | "social" | "money" | "meals" | "days">(
   coll: K,
   obj: Data[K][number],
 ): void {
@@ -105,7 +105,7 @@ export function put<K extends "quests" | "rhythm" | "journal" | "focusSlots" | "
   save();
 }
 
-export function drop(coll: "quests" | "journal" | "workouts" | "social" | "money" | "meals" | "days", id: string): void {
+export function drop(coll: "quests" | "pursuits" | "practice" | "journal" | "workouts" | "social" | "money" | "meals" | "days", id: string): void {
   (S.data[coll] as { id: string }[]) = (S.data[coll] as { id: string }[]).filter((x) => x.id !== id);
   S.data.tomb = { ...S.data.tomb, [id]: Date.now() };
   save();

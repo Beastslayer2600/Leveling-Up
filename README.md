@@ -1,6 +1,6 @@
 # Leveling Up
 
-A game-style life tracker with a dark "night ops" HUD. Missions earn XP and levels, and the app also tracks a daily Bible virtue, body and gym, social life, a money ledger with good and bad calls, a character sheet and 36 achievements.
+A game-style life tracker with a dark "night ops" HUD. Missions earn XP and levels, and the app also tracks a daily Bible virtue, body and gym, social life, a money ledger with good and bad calls, a character sheet, your own skills to level up and 41 achievements.
 
 Anyone can make it their own: on first run (and any time from **Character → Customize**) each player picks their currency, kg or lb, which modules to show (Faith, Journal, Body, Social, Money), and renames or switches off mission categories. Settings sync with the rest of the log.
 
@@ -12,6 +12,7 @@ It's an installable web app (PWA) that works offline. It runs on a laptop and on
 - **Body:** gym sessions with automatic PB detection and an estimated 1RM (Epley), cardio, steps, weight trend and meals.
 - **Social:** posts, catch-ups and events, plus how long since you last saw each group of friends.
 - **Money:** a monthly ledger, the share of good calls and spending by category.
+- **Skills:** add anything you want to get better at (Rubik's cube, chess, guitar, typing…). Each skill has its own level and rank from practice time, a weekly practice target, a practice streak and hour milestones. Optionally track a result (solve time, rating, wpm) with PBs, a goal and a trend chart.
 - **Character:** attributes that grow from XP, your current chapter, skills, abilities, achievements and backup/restore.
 
 ## Daily Rhythm
@@ -45,6 +46,7 @@ Open **Focus Session** from the Missions tab (or go to `#today/focus`). A sessio
 - Ticking a mission pays its XP, and unticking it takes the XP back. Hitting a tracked target pays a 2× bonus.
 - A gym session pays 30 XP, plus 40 for each PB.
 - Each achievement pays 50 XP.
+- Skill practice pays half an XP a minute (3 to 60 XP a session) to the category you pick for that skill, plus 25 for a new best result. Your first result is the baseline. Skill levels cost 30 × L XP (LV5 ≈ 10 hours, LV10 ≈ 45 hours).
 - A quest with steps shows its first unfinished step as the next step. Finishing the last step completes the quest.
 - Each Morning Sequence step pays 10 XP (8 Vitality + 2 Discipline; the Briefing pays 10 Discipline). Starting within 20 minutes of the wake time adds 15, and finishing all five within 45 minutes adds 25.
 

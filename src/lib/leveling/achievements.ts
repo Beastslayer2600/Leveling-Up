@@ -27,6 +27,11 @@ export interface Ctx {
   poly: number;
   journalDays: number;
   voiceNotes: number;
+  /** Practice logs across all skills. */
+  practice: number;
+  /** Most practice minutes on any one skill. */
+  topSkillMins: number;
+  skillPbs: number;
 }
 
 export interface Achievement {
@@ -71,6 +76,9 @@ export const ACH: Achievement[] = [
   { id: "black", name: "In the Black", d: "Finish a month with more in than out.", mod: "money", f: (c) => c.black },
   { id: "journal7", name: "Field Notes", d: "Journal on 7 different days.", mod: "journal", f: (c) => c.journalDays >= 7 },
   { id: "voice", name: "On the Record", d: "Save a voice note in your journal.", mod: "journal", hidden: true, f: (c) => c.voiceNotes >= 1 },
+  { id: "dojo", name: "Into the Dojo", d: "Log your first practice on a skill of your own.", mod: "skills", f: (c) => c.practice >= 1 },
+  { id: "tenhours", name: "Ten Hours In", d: "Practise one skill for 10 hours in total.", mod: "skills", f: (c) => c.topSkillMins >= 600 },
+  { id: "breakthrough", name: "Breakthrough", d: "Beat your best result on a skill 5 times.", mod: "skills", f: (c) => c.skillPbs >= 5 },
   { id: "grateful", name: "Grateful Heart", d: "Complete 7 daily virtues.", mod: "faith", f: (c) => c.virtues >= 7 },
   { id: "fruit", name: "Fruit of the Spirit", d: "Practise all nine fruits of the Spirit (Galatians 5).", mod: "faith", f: (c) => c.fruits >= 9 },
   { id: "openhand", name: "Open Hand", d: "Finish the 7-day Release Reset.", mod: "faith", f: (c) => c.rrDone },
@@ -140,6 +148,9 @@ export function ctx(data: Data, now: Date = new Date()): Ctx {
     reach: data.release.reach || 0,
     journalDays: new Set(data.journal.map((e) => e.date)).size,
     voiceNotes: data.journal.filter((e) => e.audio).length,
+    practice: data.practice.length,
+    topSkillMins: Math.max(0, ...Object.values(data.practice.reduce<Record<string, number>>((m, l) => ((m[l.skill] = (m[l.skill] || 0) + (+l.mins || 0)), m), {}))),
+    skillPbs: data.practice.filter((l) => l.pb).length,
     poly: CATS.filter((c) => levelOf(st.cat[c.id] || 0, CATEGORY_BASE).level >= 3).length,
   };
 }

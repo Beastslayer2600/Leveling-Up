@@ -379,8 +379,57 @@ export interface FocusRun {
   bonusXp: number;
 }
 
+/** How a skill's result is measured. "time" is lower-is-better and entered as m:ss. */
+export type MetricKind = "time" | "higher" | "lower";
+
+export interface SkillMetric {
+  /** What the number is, e.g. "Best solve", "Rating", "Puzzle score". */
+  name: string;
+  kind: MetricKind;
+  /** Shown after numbers, e.g. "elo", "wpm". Unused for time. */
+  unit: string;
+}
+
+/** A skill the player is levelling up, e.g. Rubik's cube or chess. */
+export interface Pursuit {
+  id: string;
+  name: string;
+  /** One emoji or a short mark shown on the card. */
+  icon: string;
+  /** Category that gets this skill's XP. */
+  cat: CatId;
+  created: number;
+  /** The result to track, if any. Practice time is always tracked. */
+  metric: SkillMetric | null;
+  /** Practice target per week, in minutes. */
+  weeklyMins: number | null;
+  /** The result being worked towards, in the metric's terms (seconds for time). */
+  goal: number | null;
+  note: string;
+  u?: number;
+}
+
+/** One practice session on a skill. */
+export interface PracticeLog {
+  id: string;
+  /** Pursuit id. */
+  skill: string;
+  date: string;
+  created: number;
+  mins: number;
+  /** The result this session, in the metric's terms (seconds for time). */
+  value: number | null;
+  note: string;
+  /** This result beat every earlier one. */
+  pb: boolean;
+  xp: number;
+  u?: number;
+}
+
 export interface Data {
   quests: Quest[];
+  pursuits: Pursuit[];
+  practice: PracticeLog[];
   rhythm: RhythmDay[];
   journal: JournalEntry[];
   focusSlots: FocusSlot[];

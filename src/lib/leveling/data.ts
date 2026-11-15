@@ -1,4 +1,5 @@
 import { blankPrefs, guessCurrency, normalizePrefs } from "./prefs.js";
+import { normalizePursuit } from "./practice.js";
 import { normalizeFocusPrefs, normalizeRun } from "./session.js";
 import { blankRelease } from "./virtues.js";
 import { blankStats } from "./xp.js";
@@ -48,6 +49,8 @@ const STARTERS: Omit<Quest, "id" | "created">[] = [
 export function blankData(now = Date.now()): Data {
   return {
     quests: STARTERS.map((q, i) => ({ ...q, id: "ex" + i, starter: true, created: now + i })),
+    pursuits: [],
+    practice: [],
     rhythm: [],
     journal: [],
     focusSlots: [],
@@ -75,6 +78,8 @@ export function normalize(raw: unknown): Data {
   const arr = <T>(x: T[] | undefined) => (Array.isArray(x) ? x : []);
   return {
     quests: arr(d.quests),
+    pursuits: arr(d.pursuits).filter((p) => p && p.id).map((p) => normalizePursuit(p)),
+    practice: arr(d.practice).filter((l) => l && l.id && l.skill),
     rhythm: arr(d.rhythm),
     journal: arr(d.journal),
     focusSlots: arr(d.focusSlots),
