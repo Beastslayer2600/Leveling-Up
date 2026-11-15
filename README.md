@@ -12,7 +12,7 @@ It's an installable web app (PWA) that works offline. It runs on a laptop and on
 - **Body:** gym sessions with automatic PB detection and an estimated 1RM (Epley), cardio, steps, weight trend and meals.
 - **Social:** posts, catch-ups and events, plus how long since you last saw each group of friends.
 - **Money:** a monthly ledger, the share of good calls and spending by category.
-- **Skills:** add anything you want to get better at (Rubik's cube, chess, guitar, typing…). Each skill has its own level and rank from practice time, a weekly practice target, a practice streak and hour milestones. Optionally track a result (solve time, rating, wpm) with PBs, a goal and a trend chart.
+- **Skills:** add anything you want to get better at (Rubik's cube, chess, guitar, typing…). Each skill has its own level and rank from practice time, a weekly practice target, a practice streak and hour milestones. Optionally track a result (solve time, rating, wpm, grade) with PBs, a goal and a trend chart, ranked against a competitive standard: WCA 3x3x3 sub-X tiers up to the SA record, the Chess SA Elo rating with FIDE title levels, UNISA music grades, CEFR language levels and typing benchmarks, or a ladder you write yourself. Time-based skills get a solve timer; Rubik's cube mode adds WCA scrambles, 15-second inspection (+2 past 15, DNF past 17), +2/DNF penalties and ao5/ao12.
 - **Character:** attributes that grow from XP, your current chapter, skills, abilities, achievements and backup/restore.
 
 ## Daily Rhythm

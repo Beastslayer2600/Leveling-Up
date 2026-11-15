@@ -5,7 +5,11 @@ import {
   METRIC_KINDS,
   SKILL_PRESETS,
   fmtMins,
+  fmtTime,
   fmtValue,
+  ladderText,
+  parseLadder,
+  standardStatus,
   isPb,
   normalizePursuit,
   parseValue,
@@ -15,7 +19,7 @@ import {
 } from "../lib/leveling/practice";
 import { activeCats, catName } from "../lib/leveling/prefs";
 import { CAT } from "../lib/leveling/xp";
-import type { MetricKind, PracticeLog, Pursuit, SkillMetric } from "../lib/leveling/types";
+import type { MetricKind, PracticeLog, Pursuit, SkillMetric, Standard } from "../lib/leveling/types";
 import { $, ICON, cvar, dayBox, esc, pct, setVal, shortD, val } from "./dom";
 import { toast } from "./fx";
 import { S, after, award, drop, newId, put, render } from "./state";
@@ -63,10 +67,15 @@ function skillCard(p: Pursuit, s: SkillSummary): string {
     ? `<div class="sk-kv"><span>This week</span><b>${fmtMins(s.weekMins)}</b><small>of ${fmtMins(p.weeklyMins)}</small><div class="meter thin"><i class="${s.weekMins >= p.weeklyMins ? "good" : ""}" style="width:${pct(s.weekMins, p.weeklyMins)}%"></i></div></div>`
     : `<div class="sk-kv"><span>This week</span><b>${fmtMins(s.weekMins)}</b></div>`;
   const bestBit = p.metric
-    ? `<div class="sk-kv"><span>${esc(p.metric.name)}</span><b class="${s.goalReached ? "pos" : ""}">${s.best ? fmtValue(s.best.value, p.metric) : "—"}</b>${p.goal ? `<small>Goal ${fmtValue(p.goal, p.metric)}${s.goalReached ? " ✓" : ""}</small>` : ""}</div>`
+    ? `<div class="sk-kv"><span>${esc(p.metric.name)}</span><b class="${s.goalReached ? "pos" : ""}">${s.best ? esc(fmtValue(s.best.value, p.metric, p.standard)) : "—"}</b>${p.goal ? `<small>Goal ${esc(fmtValue(p.goal, p.metric, p.standard))}${s.goalReached ? " ✓" : ""}</small>` : ""}</div>`
     : `<div class="sk-kv"><span>Sessions</span><b>${s.sessions}</b></div>`;
   const streakBit = `<div class="sk-kv"><span>Streak</span><b>${s.streak}<em>d</em></b></div>`;
 
+  const rank = standardStatus(p, s.best?.value);
+  const rankBit = p.standard && p.metric
+    ? `<div class="sk-std"><span class="sk-std-n">${esc(p.standard.name)}</span><b>${rank.current ? esc(rank.current.name) : "Unranked"}</b>${rank.next ? `<small>Next: ${esc(rank.next.name)}${s.best && p.metric.kind !== "level" ? ` · ${gap(s.best.value, rank.next.value, p.metric)} to go` : ""}</small>` : "<small>Top of the ladder</small>"}</div>`
+    : "";
+  const timerBtn = p.metric?.kind === "time" ? `<button class="btn ghost" type="button" data-act="sk-timer" data-id="${id}"><span class="ico">${ICON.timer}</span>Timer</button>` : "";
   let detail = "";
   if (open) {
     const toNext = s.nextHours ? fmtMins(s.nextHours * 60 - s.totalMins) : "";
@@ -75,10 +84,11 @@ function skillCard(p: Pursuit, s: SkillSummary): string {
       `<div class="sk-detail">` +
       (p.note ? `<p class="sk-note">${esc(p.note)}</p>` : "") +
       (p.metric ? `<div class="sk-chart">${resultChart(p, s)}</div>` : "") +
+      (p.standard && p.metric ? ladder(p, rank.index) : "") +
       `<div class="sk-miles">${PRACTICE.milestones.slice(0, Math.max(4, PRACTICE.milestones.findIndex((h) => h === s.nextHours) + 2)).map((h) => `<i class="${s.totalMins >= h * 60 ? "on" : h === s.nextHours ? "cur" : ""}">${h}h</i>`).join("")}</div>` +
       (s.nextHours ? `<p class="hint">${toNext} of practice to the ${s.nextHours}-hour mark.</p>` : "") +
       `<div class="list">${logs.length ? logs.slice(0, 10).map((l) => logRow(l, false)).join("") : empty("No practice logged yet.")}</div>` +
-      `<div class="acts"><button class="btn ghost" type="button" data-act="sk-edit" data-id="${id}">Edit skill</button><span class="grow"></span><button class="btn primary" type="button" data-act="sk-log" data-id="${id}"><span class="ico">${ICON.plus}</span>Log practice</button></div>` +
+      `<div class="acts"><button class="btn ghost" type="button" data-act="sk-edit" data-id="${id}">Edit skill</button><span class="grow"></span>${timerBtn}<button class="btn primary" type="button" data-act="sk-log" data-id="${id}"><span class="ico">${ICON.plus}</span>Log practice</button></div>` +
       `</div>`;
   }
 
@@ -90,15 +100,37 @@ function skillCard(p: Pursuit, s: SkillSummary): string {
     `<span class="sk-lv"><small>LV</small><b>${s.level}</b></span></button>` +
     `<div class="sk-xp"><div class="meter thin"><i style="width:${pct(s.into, s.need)}%"></i></div><small>${s.into} / ${s.need} XP</small></div>` +
     `<div class="sk-row">${weekBit}${bestBit}${streakBit}</div>` +
+    rankBit +
+    (open || !timerBtn ? "" : `<button class="sk-timer" type="button" data-act="sk-timer" data-id="${id}" aria-label="Timer for ${esc(p.name)}">${ICON.timer}</button>`) +
     (open ? "" : `<button class="sk-quick" type="button" data-act="sk-log" data-id="${id}" aria-label="Log practice for ${esc(p.name)}">+ Log</button>`) +
     detail +
     `</article>`
   );
 }
 
+/** Distance from a result to a threshold, in the metric's terms. */
+function gap(best: number, at: number, m: SkillMetric): string {
+  const d = Math.abs(best - at);
+  if (m.kind === "time") return fmtTime(d).replace(/s$/, "") + "s";
+  return (Number.isInteger(d) ? String(d) : d.toFixed(2)) + (m.unit ? " " + m.unit : "");
+}
+
+/** The whole standard, rung by rung, with the ones reached lit up. */
+function ladder(p: Pursuit, index: number): string {
+  const st = p.standard!;
+  const m = p.metric!;
+  return (
+    `<div class="sk-ladder"><div class="sec-h"><h2>${esc(st.name)}</h2><span>${index + 1}/${st.tiers.length}</span></div>` +
+    (st.note ? `<p class="hint">${esc(st.note)}</p>` : "") +
+    `<ol>${st.tiers
+      .map((t, i) => `<li class="${i <= index ? "on" : i === index + 1 ? "cur" : ""}"><span>${esc(t.name)}</span>${m.kind === "level" ? "" : `<b>${esc(fmtValue(t.value, m, st))}</b>`}</li>`)
+      .join("")}</ol></div>`
+  );
+}
+
 function logRow(l: PracticeLog, withName: boolean): string {
   const p = byId(l.skill);
-  const res = p?.metric && l.value != null ? fmtValue(l.value, p.metric) : "";
+  const res = p?.metric && l.value != null ? fmtValue(l.value, p.metric, p.standard) : "";
   const sub = [withName && p ? `${p.icon ? p.icon + " " : ""}${p.name}` : "", res, l.note].filter(Boolean).join(" · ");
   return `<button class="row-i" type="button" data-act="edit-p" data-id="${esc(l.id)}" style="--cc:${cvar(p?.cat || "mind")}">${dayBox(l.date)}<span class="t"><div>${fmtMins(l.mins)} practice</div><div>${esc(sub)}</div></span><span class="v">+${l.xp}<small class="cc">XP</small>${l.pb ? '<small class="gold">PB</small>' : ""}</span></button>`;
 }
@@ -143,12 +175,29 @@ function resultChart(p: Pursuit, s: SkillSummary): string {
 /* ---------- skill sheet ---------- */
 
 
+/** Goal options for a grade/level skill come from the ladder being typed. */
+function fillGoalSelect(keep: string) {
+  const tiers = parseLadder(val("k-ladder"), "level");
+  $("k-goalSel").innerHTML = `<option value="">No goal</option>` + tiers.map((t) => `<option value="${t.value}">${esc(t.name)}</option>`).join("");
+  setVal("k-goalSel", tiers.some((t) => String(t.value) === keep) ? keep : "");
+}
+
 function syncSkillForm() {
   const on = $<HTMLInputElement>("k-track").checked;
   $("k-metricF").hidden = !on;
   const kind = val("k-kind") as MetricKind;
-  $("k-unitF").hidden = kind === "time";
+  const level = kind === "level";
+  $("k-unitF").hidden = kind === "time" || level;
+  $("k-goal").hidden = level;
+  $("k-goalSel").hidden = !level;
+  if (level) fillGoalSelect(val("k-goalSel"));
+  $("k-cubeF").hidden = kind !== "time";
   $<HTMLInputElement>("k-goal").placeholder = kind === "time" ? "e.g. 1:00" : "e.g. 1500";
+  $<HTMLTextAreaElement>("k-ladder").placeholder = level
+    ? "One grade per line, easiest first:\nWhite belt\nYellow belt\nGreen belt"
+    : kind === "time"
+      ? "Name = time, one per line:\nSub-1:00 = 1:00\nSub-30 = 30"
+      : "Name = value, one per line:\nClub = 1200\nExpert = 2000";
 }
 
 function applyPreset(i: number) {
@@ -162,8 +211,20 @@ function applyPreset(i: number) {
   setVal("k-kind", x.metric?.kind || "higher");
   setVal("k-unit", x.metric?.unit || "");
   setVal("k-goal", "");
+  setStandard(x.standard, x.metric?.kind || "higher");
+  $<HTMLInputElement>("k-cube").checked = !!x.cube;
   document.querySelectorAll<HTMLElement>("#k-presets .chip").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.i! === i)));
   syncSkillForm();
+}
+
+/** Put a standard into the form. The note is kept aside and goes back on save if the name is unchanged. */
+let stdNote = "";
+function setStandard(st: Standard | null | undefined, kind: MetricKind) {
+  setVal("k-std", st?.name || "");
+  setVal("k-ladder", ladderText(st, kind));
+  stdNote = st?.note || "";
+  $("k-stdNote").textContent = stdNote;
+  $("k-stdNote").hidden = !stdNote;
 }
 
 export function fillSkill(p: Pursuit | null): void {
@@ -180,12 +241,16 @@ export function fillSkill(p: Pursuit | null): void {
   setVal("k-cat", cat);
   setVal("k-week", p?.weeklyMins ?? "");
   $<HTMLInputElement>("k-track").checked = !!p?.metric;
+  const kind = p?.metric?.kind || "time";
   setVal("k-mname", p?.metric?.name || "");
-  setVal("k-kind", p?.metric?.kind || "time");
+  setVal("k-kind", kind);
   setVal("k-unit", p?.metric?.unit || "");
-  setVal("k-goal", p?.goal != null && p.metric ? (p.metric.kind === "time" ? fmtValue(p.goal, p.metric).replace(/s$/, "") : String(p.goal)) : "");
+  setVal("k-goal", p?.goal != null && p.metric && kind !== "level" ? (kind === "time" ? fmtTime(p.goal).replace(/s$/, "") : String(p.goal)) : "");
+  setStandard(p?.standard, kind);
+  $<HTMLInputElement>("k-cube").checked = !!p?.cube;
   setVal("k-note", p?.note || "");
   syncSkillForm();
+  if (kind === "level") fillGoalSelect(p?.goal != null ? String(p.goal) : "");
 }
 
 function saveSkill() {
@@ -195,7 +260,7 @@ function saveSkill() {
   const track = $<HTMLInputElement>("k-track").checked;
   const kind = val("k-kind") as MetricKind;
   const mname = val("k-mname").trim() || (kind === "time" ? "Best time" : "Result");
-  const goalRaw = val("k-goal").trim();
+  const goalRaw = kind === "level" ? val("k-goalSel") : val("k-goal").trim();
   const goal = track && goalRaw ? parseValue(goalRaw, kind) : null;
   if (track && goalRaw && goal == null) return toast(kind === "time" ? "Couldn't read that goal. Try 1:00 or 45.5." : "The goal needs to be a number.");
   const p = normalizePursuit({
@@ -208,7 +273,12 @@ function saveSkill() {
     weeklyMins: val("k-week") ? +val("k-week") : null,
     goal,
     note: val("k-note"),
+    standard: track && val("k-ladder").trim()
+      ? { name: val("k-std").trim() || "My standard", note: val("k-std").trim() === (prev?.standard?.name || presetStd()) ? stdNote : "", tiers: parseLadder(val("k-ladder"), kind) }
+      : null,
+    cube: $<HTMLInputElement>("k-cube").checked,
   });
+  if (track && val("k-ladder").trim() && !p.standard) return toast(kind === "level" ? "Add one grade per line." : "Write each rung as Name = value, e.g. Sub-30 = 30.");
   // Changing how the result is measured re-judges old PBs; the XP already paid stays.
   if (prev && prev.metric?.kind !== p.metric?.kind) {
     for (const l of logsOf(p.id)) if (l.pb) put("practice", { ...l, pb: false });
@@ -217,6 +287,12 @@ function saveSkill() {
   openId = p.id;
   closeSheetSoon();
   toast(prev ? "Skill saved" : `New skill: ${p.name}. Log your first practice to start levelling.`, prev ? "" : "xp");
+}
+
+/** Name of the preset standard currently selected, so its note survives the save. */
+function presetStd(): string {
+  const b = document.querySelector<HTMLElement>('#k-presets .chip[aria-pressed="true"]');
+  return b ? SKILL_PRESETS[+b.dataset.i!]?.standard?.name || "" : "";
 }
 
 /** Delete a skill with all its practice, and take back the XP it paid. */
@@ -239,11 +315,22 @@ function syncPracticeForm() {
   const m = p?.metric || null;
   $("r-valF").hidden = !m;
   if (m) {
+    const level = m.kind === "level";
+    $("r-val").hidden = level;
+    $("r-valSel").hidden = !level;
+    if (level) {
+      const keep = val("r-valSel");
+      $("r-valSel").innerHTML = `<option value="">Not this time</option>` + (p?.standard?.tiers || []).map((t) => `<option value="${t.value}">${esc(t.name)}</option>`).join("");
+      setVal("r-valSel", keep);
+    }
     $("r-valL").textContent = m.name + " (optional)";
     $<HTMLInputElement>("r-val").placeholder = m.kind === "time" ? "1:23.45" : m.unit ? `e.g. 1200 ${m.unit}` : "e.g. 1200";
     $<HTMLInputElement>("r-val").inputMode = m.kind === "time" ? "text" : "decimal";
     const best = p ? skillSummary(p, S.data.practice).best : null;
-    $("r-valH").textContent = best ? `Best so far: ${fmtValue(best.value, m)}. Beat it for +${PRACTICE.pbXp} XP.` : "Your first result sets the baseline to beat.";
+    const st = p ? standardStatus(p, best?.value) : null;
+    $("r-valH").textContent =
+      (best ? `Best so far: ${fmtValue(best.value, m, p?.standard)}. Beat it for +${PRACTICE.pbXp} XP.` : "Your first result sets the baseline to beat.") +
+      (st?.next ? ` Next on ${p!.standard!.name}: ${st.next.name}${m.kind === "level" ? "" : ` (${fmtValue(st.next.value, m, p?.standard)})`}.` : "");
   }
   const mins = +val("r-mins") || 0;
   $("r-xp").textContent = mins ? `+${practiceXp(mins)} XP${m ? ` (+${PRACTICE.pbXp} more for a PB)` : ""}` : "";
@@ -259,7 +346,10 @@ export function fillPractice(l: PracticeLog | null): void {
   setVal("r-date", l?.date || dkey());
   setVal("r-mins", l?.mins || "");
   const p = byId(val("r-skill"));
-  setVal("r-val", l?.value != null && p?.metric ? (p.metric.kind === "time" ? fmtValue(l.value, p.metric).replace(/s$/, "") : String(l.value)) : "");
+  setVal("r-val", l?.value != null && p?.metric ? (p.metric.kind === "time" ? fmtTime(l.value).replace(/s$/, "") : String(l.value)) : "");
+  $("r-valSel").innerHTML = "";
+  syncPracticeForm();
+  setVal("r-valSel", l?.value != null ? String(l.value) : "");
   setVal("r-note", l?.note || "");
   logFor = null;
   syncPracticeForm();
@@ -270,24 +360,36 @@ function savePractice() {
   if (!p) return toast("Add a skill first.");
   const mins = Math.round(+val("r-mins"));
   if (!(mins > 0)) return toast("How many minutes did you practise?");
-  const raw = val("r-val").trim();
+  const level = p.metric?.kind === "level";
+  const raw = level ? val("r-valSel") : val("r-val").trim();
   const value = p.metric && raw ? parseValue(raw, p.metric.kind) : null;
   if (p.metric && raw && value == null) return toast(p.metric.kind === "time" ? "Couldn't read that time. Try 1:23.45 or 83.4." : "The result needs to be a number.");
   const prev = S.data.practice.find((x) => x.id === S.editId) || null;
+  commitPractice(p, prev, { date: val("r-date") || dkey(), mins, value, note: val("r-note").trim(), solves: prev?.solves, ao5: prev?.ao5 });
+  closeSheetSoon();
+}
+
+/** Save a practice log, pay its XP and announce PBs, goals, ranks and levels. Shared by the form and the timer. */
+export function commitPractice(
+  p: Pursuit,
+  prev: PracticeLog | null,
+  f: { date: string; mins: number; value: number | null; note: string; solves?: (number | null)[]; ao5?: number | null },
+): PracticeLog {
   const before = skillSummary(p, S.data.practice);
-  const others = logsOf(p.id);
-  const pb = isPb(value, others, p.metric, prev?.id);
-  const xp = practiceXp(mins, pb);
+  const rankBefore = standardStatus(p, before.best?.value);
+  const pb = isPb(f.value, logsOf(p.id), p.metric, prev?.id);
+  const xp = practiceXp(f.mins, pb);
   const l: PracticeLog = {
     id: prev?.id || newId(),
     skill: p.id,
-    date: val("r-date") || dkey(),
+    date: f.date,
     created: prev?.created || Date.now(),
-    mins,
-    value,
-    note: val("r-note").trim(),
+    mins: f.mins,
+    value: f.value,
+    note: f.note,
     pb,
     xp,
+    ...(f.solves?.length ? { solves: f.solves, ao5: f.ao5 ?? null } : {}),
   };
   // Moving a log to a different skill takes its XP back from the old one's category.
   const prevP = prev ? byId(prev.skill) : null;
@@ -301,15 +403,17 @@ function savePractice() {
     if (diff) award({ delta: diff, title: `${p.name} practice`, cat: p.cat });
   }
   const now = skillSummary(p, S.data.practice);
+  const rankNow = standardStatus(p, now.best?.value);
   const msgs: string[] = [];
-  if (pb && p.metric) msgs.push(`New PB · ${p.metric.name}: ${fmtValue(value, p.metric)}`);
-  if (!before.goalReached && now.goalReached && p.metric) msgs.push(`Goal reached: ${fmtValue(p.goal, p.metric)}. Set a new one in Edit skill.`);
+  if (pb && p.metric) msgs.push(`New PB · ${p.metric.name}: ${fmtValue(f.value, p.metric, p.standard)}`);
+  if (rankNow.index > rankBefore.index && rankNow.current) msgs.push(`${p.standard!.name}: you're now ${rankNow.current.name}`);
+  if (!before.goalReached && now.goalReached && p.metric) msgs.push(`Goal reached: ${fmtValue(p.goal, p.metric, p.standard)}. Set a new one in Edit skill.`);
   if (now.level > before.level) msgs.push(`${p.name} is LV${now.level} · ${now.rank}`);
   if (now.lastHours && now.lastHours !== before.lastHours) msgs.push(`${now.lastHours} hour${now.lastHours === 1 ? "" : "s"} of ${p.name}`);
   msgs.forEach((m, i) => setTimeout(() => toast(m, "xp"), 900 + i * 1600));
   openId = p.id;
-  closeSheetSoon();
   after();
+  return l;
 }
 
 /* ---------- wiring ---------- */
@@ -386,8 +490,10 @@ export function initSkills(close: () => void): void {
     syncPracticeForm();
   });
   $("r-mins").addEventListener("input", syncPracticeForm);
+  $("k-ladder").addEventListener("input", () => { if (val("k-kind") === "level") fillGoalSelect(val("k-goalSel")); });
   $("r-skill").addEventListener("change", () => {
     setVal("r-val", "");
+    setVal("r-valSel", "");
     syncPracticeForm();
   });
   $("f-practice").addEventListener("submit", (e) => {

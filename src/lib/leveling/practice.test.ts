@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkAchievements } from "./achievements.js";
 import { blankData, normalize } from "./data.js";
-import { bestOf, fmtTime, fmtValue, goalMet, isPb, normalizePursuit, parseValue, practiceStreak, practiceXp, skillRank, skillSummary } from "./practice.js";
+import { SKILL_PRESETS, bestAverage, ladderText, parseLadder, scramble333, standardStatus, wcaAverage, bestOf, fmtTime, fmtValue, goalMet, isPb, normalizePursuit, parseValue, practiceStreak, practiceXp, skillRank, skillSummary } from "./practice.js";
 import { mergeData } from "./sync.js";
 import type { PracticeLog } from "./types.js";
 
@@ -123,3 +123,56 @@ describe("storage", () => {
   });
 });
 
+
+describe("competitive standards", () => {
+  const cubeP = normalizePursuit({ id: "c", ...SKILL_PRESETS[0] }, 0);
+  const chessP = normalizePursuit({ id: "h", ...SKILL_PRESETS[1] }, 0);
+  const guitarP = normalizePursuit({ id: "g", ...SKILL_PRESETS[2] }, 0);
+
+  it("every preset with a result has a standard, and presets keep it", () => {
+    for (const p of SKILL_PRESETS) if (p.metric) expect(p.standard?.tiers.length).toBeGreaterThan(2);
+    expect(cubeP.standard?.name).toBe("WCA 3x3x3");
+    expect(cubeP.cube).toBe(true);
+    expect(chessP.cube).toBe(false);
+  });
+  it("places a result on the ladder", () => {
+    expect(standardStatus(cubeP, 45).current?.name).toBe("Sub-1:00");
+    expect(standardStatus(cubeP, 45).next?.name).toBe("Sub-40");
+    expect(standardStatus(cubeP, 150).current).toBeNull();
+    expect(standardStatus(cubeP, null).next?.name).toBe("Sub-2:00");
+    expect(standardStatus(chessP, 1650).current?.name).toBe("Strong club player");
+    expect(standardStatus(chessP, 2600).next).toBeNull();
+  });
+  it("shows levels by grade name", () => {
+    expect(fmtValue(3, guitarP.metric, guitarP.standard)).toBe("Grade 2");
+    expect(isPb(4, [log({ value: 3 })], guitarP.metric)).toBe(true);
+  });
+  it("reads and writes custom ladders", () => {
+    const t = parseLadder("Sub-1:00 = 1:00\nSub-2:00 = 2:00\nnonsense", "time");
+    expect(t).toEqual([{ name: "Sub-2:00", value: 120 }, { name: "Sub-1:00", value: 60 }]);
+    expect(ladderText({ name: "x", note: "", tiers: t }, "time")).toBe("Sub-2:00 = 2:00\nSub-1:00 = 1:00");
+    expect(parseLadder("White belt\nYellow belt", "level")).toEqual([{ name: "White belt", value: 1 }, { name: "Yellow belt", value: 2 }]);
+    expect(parseLadder("Club = 1200\nNew = 800", "higher").map((x) => x.value)).toEqual([800, 1200]);
+  });
+});
+
+describe("cube timer maths", () => {
+  it("WCA average of 5 drops best and worst; one DNF is the worst, two is a DNF", () => {
+    expect(wcaAverage([10, 12, 11, 30, 9])).toBe(11);
+    expect(wcaAverage([10, 12, 11, null, 9])).toBe(11);
+    expect(wcaAverage([10, null, 11, null, 9])).toBeNull();
+    expect(wcaAverage([10, 12])).toBeUndefined();
+    expect(bestAverage([20, 20, 20, 20, 20, 10, 10, 10])).toBe(13.33);
+  });
+  it("scrambles never repeat a face or stack three moves on one axis", () => {
+    let seed = 1;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let k = 0; k < 50; k++) {
+      const m = scramble333(rand).split(" ");
+      expect(m).toHaveLength(20);
+      const axis = (f: string) => "UDRLFB".indexOf(f[0]) >> 1;
+      for (let i = 1; i < m.length; i++) expect(m[i][0]).not.toBe(m[i - 1][0]);
+      for (let i = 2; i < m.length; i++) expect(axis(m[i]) === axis(m[i - 1]) && axis(m[i]) === axis(m[i - 2])).toBe(false);
+    }
+  });
+});

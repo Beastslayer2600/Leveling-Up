@@ -534,8 +534,12 @@
       </div>
       <div class="row">
         <div class="fld" id="k-unitF"><label for="k-unit">Unit (optional)</label><input class="in" id="k-unit" maxlength="12" placeholder="elo, wpm, pts"></div>
-        <div class="fld"><label for="k-goal">Goal (optional)</label><input class="in" id="k-goal" maxlength="16" placeholder="e.g. 1:00"></div>
+        <div class="fld"><label for="k-goal">Goal (optional)</label><input class="in" id="k-goal" maxlength="16" placeholder="e.g. 1:00"><select class="in" id="k-goalSel" hidden aria-label="Goal grade"></select></div>
       </div>
+      <div class="fld"><label for="k-std">Ranked against (competitive standard)</label><input class="in" id="k-std" maxlength="60" placeholder="e.g. WCA 3x3x3, Chess SA rating, UNISA grades"></div>
+      <p class="hint" id="k-stdNote" hidden></p>
+      <div class="fld"><label for="k-ladder">Ladder (optional)</label><textarea class="in" id="k-ladder" rows="5"></textarea></div>
+      <label class="chk" id="k-cubeF"><input type="checkbox" id="k-cube"><span>Speedcubing timer: WCA scrambles and 15-second inspection</span></label>
     </div>
     <div class="fld"><label for="k-note">Why it matters (optional)</label><input class="in" id="k-note" maxlength="200" placeholder="Sub-minute solve by March"></div>
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="k-save">Add skill</button></div>
@@ -550,7 +554,7 @@
     </div>
     <div class="fld"><label for="r-mins">Minutes practised</label>
       <div class="r-mins"><input class="in" id="r-mins" type="number" min="1" max="600" inputmode="numeric" required placeholder="30"><div class="seg quick" id="r-quick"></div></div></div>
-    <div class="fld" id="r-valF"><label for="r-val" id="r-valL">Result</label><input class="in" id="r-val" maxlength="16"><small class="hint" id="r-valH"></small></div>
+    <div class="fld" id="r-valF"><label for="r-val" id="r-valL">Result</label><input class="in" id="r-val" maxlength="16"><select class="in" id="r-valSel" hidden></select><small class="hint" id="r-valH"></small></div>
     <div class="fld"><label for="r-note">Notes (optional)</label><input class="in" id="r-note" maxlength="200" placeholder="What you worked on: F2L, endgames, a new song"></div>
     <p class="hint" id="r-xp"></p>
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="r-save">Log it</button></div>

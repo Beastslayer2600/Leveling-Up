@@ -24,6 +24,7 @@ import { closeFocus, openFocus } from "./ui/focus";
 import { initRhythm } from "./ui/rhythm";
 import { initSession, openSession } from "./ui/session";
 import { openPractice, skillAction } from "./ui/skills";
+import { initTimer, openTimer } from "./ui/timer";
 import { askCoach, initSync } from "./ui/sync";
 import { closeSheet, initSheets, openCommitMission, openEntry, openSheet } from "./ui/sheets";
 import { S, after, award, drop, focusFromHash, grant, initialTab, newId, onRender, put, replaceData, save, setTab, type Tab } from "./ui/state";
@@ -44,6 +45,7 @@ initSheets();
 initJournal();
 initRhythm();
 initSession();
+initTimer();
 
 /* ---------- missions ---------- */
 
@@ -245,6 +247,11 @@ document.addEventListener("click", (e) => {
   }
   const a = b.dataset.act;
   const id = b.dataset.id!;
+  if (a === "sk-timer") {
+    const p = S.data.pursuits.find((x) => x.id === id);
+    if (p) openTimer(p);
+    return;
+  }
   if (a && skillAction(a, b, openSheet)) return;
   const find = <T extends { id: string }>(arr: T[]) => arr.find((x) => x.id === id) || null;
   switch (a) {

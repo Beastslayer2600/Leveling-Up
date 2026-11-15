@@ -379,8 +379,23 @@ export interface FocusRun {
   bonusXp: number;
 }
 
-/** How a skill's result is measured. "time" is lower-is-better and entered as m:ss. */
-export type MetricKind = "time" | "higher" | "lower";
+/** How a skill's result is measured. "time" is lower-is-better and entered as m:ss; "level" is a named grade from the skill's standard. */
+export type MetricKind = "time" | "higher" | "lower" | "level";
+
+/** One rung of a competitive standard, e.g. "Sub-20" at 20 s, or "FIDE Master" at 2300. */
+export interface Tier {
+  name: string;
+  value: number;
+}
+
+/** The recognised scale a skill is measured against (WCA, Chess SA rating, UNISA grades, CEFR…). */
+export interface Standard {
+  name: string;
+  /** Short note on what the scale is and who runs it. */
+  note: string;
+  /** Easiest first. */
+  tiers: Tier[];
+}
 
 export interface SkillMetric {
   /** What the number is, e.g. "Best solve", "Rating", "Puzzle score". */
@@ -406,6 +421,10 @@ export interface Pursuit {
   /** The result being worked towards, in the metric's terms (seconds for time). */
   goal: number | null;
   note: string;
+  /** The competitive standard the result is ranked against. */
+  standard?: Standard | null;
+  /** Speedcubing mode: the timer shows scrambles and WCA inspection. */
+  cube?: boolean;
   u?: number;
 }
 
@@ -423,6 +442,10 @@ export interface PracticeLog {
   /** This result beat every earlier one. */
   pb: boolean;
   xp: number;
+  /** Timer sessions: every solve in seconds, null for a DNF. */
+  solves?: (number | null)[];
+  /** Best WCA average of 5 in this session. */
+  ao5?: number | null;
   u?: number;
 }
 
