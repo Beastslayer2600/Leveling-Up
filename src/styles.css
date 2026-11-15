@@ -1296,3 +1296,87 @@ body.timer-open { overflow: hidden; }
 .tm-acts { display: flex; gap: 10px; align-items: center; }
 .tm-acts .grow { flex: 1; }
 @media (min-width: 900px) { .tm { padding-left: max(16px, calc(50vw - 420px)); padding-right: max(16px, calc(50vw - 420px)); } }
+.tm-scr span { white-space: pre-line; }
+.tm-scr.long span { font-size: 13px; word-spacing: 0.15em; }
+
+/* ---------- skill analytics ---------- */
+.sk-mainwrap { display: flex; flex-direction: column; gap: 22px; }
+.sk-ana { display: flex; flex-direction: column; gap: 16px; }
+.ana-h { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.ana-h h2 { margin: 2px 0 0; font-family: var(--f-display); font-size: 26px; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.05; overflow-wrap: anywhere; }
+.ana-h .kicker { color: var(--gold); margin: 0; }
+.ana-lv { font-family: var(--f-mono); font-weight: 700; font-size: 22px; color: var(--gold); text-align: right; line-height: 1; }
+.ana-lv small { display: block; font-family: var(--f-display); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+.ana-hero { background: radial-gradient(120% 140% at 0% 0%, rgba(245, 185, 66, 0.14), transparent 55%), var(--panel); }
+.ana-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.ana-kpis > div { min-width: 0; }
+.ana-kpis span { display: block; font-family: var(--f-display); font-weight: 600; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ana-kpis b { display: block; font-family: var(--f-mono); font-size: 22px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ana-kpis.sm b { font-size: 17px; }
+.ana-kpis em, .ana-tbl em { font-style: normal; font-family: var(--f-mono); font-size: 11.5px; }
+.up { color: var(--good); }
+.down { color: var(--bad); }
+.same { color: var(--muted); }
+.ana-rank { margin: 0; color: var(--muted); font-size: 14px; }
+.ana-rank b { color: var(--gold-hi); }
+.ana-head { margin: 0; font-size: 15px; color: var(--ink-2); }
+.ana-tbl { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.ana-tbl th { font-family: var(--f-display); font-weight: 600; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 6px 6px; }
+.ana-tbl td { padding: 8px 6px; border-top: 1px solid var(--line); white-space: nowrap; }
+.ana-tbl tbody th { border-top: 1px solid var(--line); }
+.ana-tbl td.now { color: var(--gold-hi); font-weight: 700; }
+.ana-tbl.sess td { padding: 6px; }
+.chart.ana-chart .dot-solve { fill: color-mix(in srgb, var(--cc, var(--c-mind)) 55%, transparent); }
+.chart .ln-ao5 { fill: none; stroke: var(--c-social); stroke-width: 2.2; stroke-linejoin: round; filter: drop-shadow(0 0 5px rgba(79, 218, 211, 0.5)); }
+.chart .ln-ao12 { fill: none; stroke: var(--c-discipline); stroke-width: 2.2; stroke-linejoin: round; opacity: 0.9; }
+.chart .ln-best { fill: none; stroke: var(--gold); stroke-width: 2; stroke-dasharray: 5 3; }
+.chart .ln-main { fill: none; stroke: var(--cc, var(--gold)); stroke-width: 2.4; stroke-linejoin: round; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--cc, var(--gold)) 50%, transparent)); }
+.chart .ln-acc { fill: none; stroke: var(--c-faith); stroke-width: 2; }
+.chart .dot-acc { fill: var(--c-faith); }
+.chart .dot-game { fill: var(--meh); stroke: var(--bg); stroke-width: 1.5; }
+.chart .dot-game.win { fill: var(--good); }
+.chart .dot-game.loss { fill: var(--bad); }
+.ana-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-family: var(--f-display); font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.ana-legend span::before { content: ""; display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.lg-solve::before { width: 6px !important; height: 6px !important; border-radius: 50% !important; background: color-mix(in srgb, var(--c-mind) 70%, transparent) !important; }
+.lg-ao5::before { background: var(--c-social) !important; }
+.lg-ao12::before { background: var(--c-discipline) !important; }
+.lg-best::before { background: var(--gold) !important; }
+.lg-w::before, .lg-d::before, .lg-l::before { width: 8px !important; height: 8px !important; border-radius: 50% !important; }
+.lg-w::before { background: var(--good) !important; }
+.lg-d::before { background: var(--meh) !important; }
+.lg-l::before { background: var(--bad) !important; }
+.ana-bars { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; height: 130px; align-items: end; }
+.ab { display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; min-width: 0; }
+.ab small { font-family: var(--f-mono); font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+.ab .ab-l { color: var(--faint); overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ab-t { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.ab-t i { width: 100%; border-radius: 5px 5px 2px 2px; background: color-mix(in srgb, var(--cc, var(--gold)) 55%, var(--panel-2)); }
+.ab.hl .ab-t i { background: var(--gold); box-shadow: 0 0 12px -2px var(--gold-glow); }
+.ana-cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ana-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ana-col h4 { grid-column: 1 / -1; margin: 0; font-family: var(--f-display); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+.ana-col.dim h4 { color: var(--muted); }
+.ana-col span { display: block; font-family: var(--f-display); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.ana-col b { font-family: var(--f-mono); font-size: 15px; }
+.ana-col.dim b { color: var(--ink-2); }
+.rec { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: 2px 10px; }
+.rec b { grid-row: span 2; font-family: var(--f-display); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec small { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+.rec-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: var(--well); }
+.rec-bar i.w { background: var(--good); }
+.rec-bar i.d { background: var(--meh); }
+.rec-bar i.l { background: var(--bad); }
+.form-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.form-row > span { font-family: var(--f-display); font-weight: 600; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.form-row small { color: var(--good); font-family: var(--f-mono); font-size: 11.5px; margin-left: 6px; }
+.fr { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; font-style: normal; font-family: var(--f-mono); font-weight: 700; font-size: 11.5px; color: #0b0f18; background: var(--meh); }
+.fr.win { background: var(--good); }
+.fr.loss { background: var(--bad); }
+.row-i.game .fr { width: 18px; height: 18px; font-size: 10px; vertical-align: 1px; margin-right: 2px; }
+.lessons { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.lessons li { padding: 9px 12px; border-left: 3px solid var(--gold); background: rgba(7, 10, 17, 0.4); border-radius: 0 9px 9px 0; font-size: 14px; }
+.lessons time { display: block; font-family: var(--f-mono); font-size: 10.5px; color: var(--faint); }
+.g-sub { margin: 4px 0 0; font-family: var(--f-display); font-size: 14px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.g-rated { align-self: end; padding-bottom: 12px; }
+@media (max-width: 420px) { .ana-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ana-cmp { grid-template-columns: 1fr; } }

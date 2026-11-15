@@ -2,7 +2,8 @@
    competition: a scramble, 15 seconds of inspection (calls at 8 and 12, +2 past 15,
    DNF past 17), hold to arm, release to start, any touch or key to stop. */
 import { dkey } from "../lib/leveling/dates";
-import { bestAverage, fmtTime, scramble333, wcaAverage } from "../lib/leveling/practice";
+import { bestAverage, fmtTime, wcaAverage } from "../lib/leveling/practice";
+import { CUBE_EVENT, bestMean3, mean3, scrambleFor } from "../lib/leveling/cubes";
 import type { Pursuit } from "../lib/leveling/types";
 import { $, ICON, esc } from "./dom";
 import { toast } from "./fx";
@@ -40,6 +41,8 @@ let armClose = false;
 /** The hold started during inspection, so letting go early goes back to inspecting. */
 let armedFromInspect = false;
 
+/** The average this skill is ranked by: mean of 3 for big cubes and blindfolded. */
+const fmtOf = (p: Pursuit | null) => (p?.cube ? CUBE_EVENT[p.event || "333"]?.format || "ao5" : "ao5");
 const skill = () => S.data.pursuits.find((p) => p.id === sess?.skill) || null;
 const result = (s: Solve): number | null => (s.pen === "dnf" ? null : Math.round((s.t + s.pen) * 100) / 100);
 const fmt = (v: number | null | undefined) => (v === undefined ? "—" : v === null ? "DNF" : fmtTime(v).replace(/s$/, ""));
@@ -65,7 +68,7 @@ function restore(): Session | null {
 /** Open the timer for a skill. An unsaved session for the same skill picks up where it left off. */
 export function openTimer(p: Pursuit): void {
   const old = restore();
-  sess = old && old.skill === p.id ? old : { skill: p.id, startedAt: 0, solves: [], scramble: p.cube ? scramble333() : "", inspect: !!p.cube };
+  sess = old && old.skill === p.id ? old : { skill: p.id, startedAt: 0, solves: [], scramble: p.cube ? scrambleFor(p.event) : "", inspect: !!p.cube && (CUBE_EVENT[p.event || "333"]?.inspection ?? true) };
   phase = "idle";
   armClose = false;
   $("tm").hidden = false;
@@ -141,7 +144,7 @@ function stop() {
   stopLoop();
   sess.solves.push({ t, pen: inspectPen, scramble: sess.scramble, at: Date.now() });
   const p = skill();
-  if (p?.cube) sess.scramble = scramble333();
+  if (p?.cube) sess.scramble = scrambleFor(p.event);
   phase = "idle";
   persist();
   buzz(30);
@@ -185,7 +188,7 @@ function inspectDnf() {
   if (!sess) return;
   if (!sess.startedAt) sess.startedAt = Date.now();
   sess.solves.push({ t: 0, pen: "dnf", scramble: sess.scramble, at: Date.now() });
-  if (skill()?.cube) sess.scramble = scramble333();
+  if (skill()?.cube) sess.scramble = scrambleFor(skill()?.event);
   phase = "idle";
   persist();
   toast("Inspection ran past 17 seconds: DNF");
@@ -229,8 +232,12 @@ function draw() {
   const times = sess.solves.map(result);
   const ok = times.filter((x) => x != null) as number[];
   $("tm-name").textContent = p ? `${p.icon ? p.icon + " " : ""}${p.name}` : "Timer";
-  $("tm-scr").textContent = sess.scramble;
+  const mo3 = fmtOf(p) === "mo3";
+  const ev = p?.cube ? CUBE_EVENT[p.event || "333"] : null;
+  $("tm-scr").textContent = sess.scramble || (ev ? `Scramble your ${ev.name} with an official scrambler` : "");
   $("tm-scrRow").hidden = !p?.cube;
+  $("tm-next").hidden = !sess.scramble;
+  $("tm-scrRow").classList.toggle("long", sess.scramble.length > 160);
   $<HTMLInputElement>("tm-insp").checked = sess.inspect;
   const root = $("tm");
   root.dataset.phase = phase === "armed" && armedFromInspect ? "inspect-armed" : phase === "ready" ? "ready" : phase;
@@ -254,9 +261,9 @@ function draw() {
   $("tm-stats").innerHTML = [
     ["Solves", String(sess.solves.length)],
     ["Best", ok.length ? fmt(Math.min(...ok)) : "—"],
-    ["ao5", fmt(wcaAverage(times, 5))],
-    ["ao12", fmt(wcaAverage(times, 12))],
-    ["Best ao5", fmt(bestAverage(times, 5) ?? undefined)],
+    mo3 ? ["mo3", fmt(mean3(times))] : ["ao5", fmt(wcaAverage(times, 5))],
+    mo3 ? ["ao5", fmt(wcaAverage(times, 5))] : ["ao12", fmt(wcaAverage(times, 12))],
+    mo3 ? ["Best mo3", fmt(bestMean3(times) ?? undefined)] : ["Best ao5", fmt(bestAverage(times, 5) ?? undefined)],
     ["Mean", ok.length ? fmt(ok.reduce((s, x) => s + x, 0) / ok.length) : "—"],
   ]
     .map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`)
@@ -282,11 +289,12 @@ function save() {
   const times = sess.solves.map(result);
   const ok = times.filter((x) => x != null) as number[];
   const best = ok.length ? Math.min(...ok) : null;
-  const ao5 = bestAverage(times, 5);
-  const ao12 = bestAverage(times, 12);
+  const mo3 = fmtOf(p) === "mo3";
+  const ao5 = mo3 ? bestMean3(times) : bestAverage(times, 5);
+  const ao12 = mo3 ? null : bestAverage(times, 12);
   const end = sess.solves[sess.solves.length - 1].at;
   const mins = Math.max(1, Math.round((end - (sess.startedAt || end)) / 60000));
-  const note = [`${sess.solves.length} solves`, ao5 != null ? `best ao5 ${fmt(ao5)}` : "", ao12 != null ? `ao12 ${fmt(ao12)}` : ""].filter(Boolean).join(" · ");
+  const note = [`${sess.solves.length} solves`, ao5 != null ? `best ${mo3 ? "mo3" : "ao5"} ${fmt(ao5)}` : "", ao12 != null ? `ao12 ${fmt(ao12)}` : ""].filter(Boolean).join(" · ");
   commitPractice(p, null, { date: dkey(), mins, value: best, note, solves: times, ao5 });
   sess = null;
   persist();
@@ -367,7 +375,7 @@ export function initTimer(): void {
   });
   $("tm-next").addEventListener("click", () => {
     if (!sess || phase !== "idle") return;
-    sess.scramble = scramble333();
+    sess.scramble = scrambleFor(skill()?.event);
     persist();
     draw();
   });

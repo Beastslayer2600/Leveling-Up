@@ -6,6 +6,7 @@ import {
   SKILL_PRESETS,
   fmtMins,
   fmtTime,
+  gamePoints,
   fmtValue,
   ladderText,
   parseLadder,
@@ -18,8 +19,10 @@ import {
   type SkillSummary,
 } from "../lib/leveling/practice";
 import { activeCats, catName } from "../lib/leveling/prefs";
+import { CUBE_EVENT, CUBE_EVENTS, cubeStandard } from "../lib/leveling/cubes";
 import { CAT } from "../lib/leveling/xp";
-import type { MetricKind, PracticeLog, Pursuit, SkillMetric, Standard } from "../lib/leveling/types";
+import type { ChessGame, MetricKind, PracticeLog, Pursuit, SkillMetric, Standard } from "../lib/leveling/types";
+import { gameFor, renderAnalytics } from "./skillstats";
 import { $, ICON, cvar, dayBox, esc, pct, setVal, shortD, val } from "./dom";
 import { toast } from "./fx";
 import { S, after, award, drop, newId, put, render } from "./state";
@@ -32,12 +35,18 @@ const logsOf = (id: string) => S.data.practice.filter((l) => l.skill === id);
 let openId: string | null = null;
 /** Skill to preselect when the practice sheet opens. */
 let logFor: string | null = null;
+/** Skill whose analytics page is showing. */
+let anaId: string | null = null;
 
 /* ---------- render ---------- */
 
 export function renderSkills(): void {
   const { pursuits, practice } = S.data;
-  const sums = new Map(pursuits.map((p) => [p.id, skillSummary(p, practice)]));
+  const ana = anaId ? byId(anaId) : null;
+  $("sk-ana").hidden = !ana;
+  $("sk-main").hidden = !!ana;
+  if (ana) return void ($("sk-ana").innerHTML = renderAnalytics(ana));
+  const sums = new Map(pursuits.map((p) => [p.id, skillSummary(p, practice, undefined, S.data.games)]));
   const all = [...sums.values()];
   $("sk-week").textContent = fmtMins(all.reduce((s, x) => s + x.weekMins, 0));
   $("sk-total").textContent = fmtMins(all.reduce((s, x) => s + x.totalMins, 0));
@@ -88,7 +97,7 @@ function skillCard(p: Pursuit, s: SkillSummary): string {
       `<div class="sk-miles">${PRACTICE.milestones.slice(0, Math.max(4, PRACTICE.milestones.findIndex((h) => h === s.nextHours) + 2)).map((h) => `<i class="${s.totalMins >= h * 60 ? "on" : h === s.nextHours ? "cur" : ""}">${h}h</i>`).join("")}</div>` +
       (s.nextHours ? `<p class="hint">${toNext} of practice to the ${s.nextHours}-hour mark.</p>` : "") +
       `<div class="list">${logs.length ? logs.slice(0, 10).map((l) => logRow(l, false)).join("") : empty("No practice logged yet.")}</div>` +
-      `<div class="acts"><button class="btn ghost" type="button" data-act="sk-edit" data-id="${id}">Edit skill</button><span class="grow"></span>${timerBtn}<button class="btn primary" type="button" data-act="sk-log" data-id="${id}"><span class="ico">${ICON.plus}</span>Log practice</button></div>` +
+      `<div class="acts"><button class="btn ghost" type="button" data-act="sk-edit" data-id="${id}">Edit skill</button><button class="btn ghost" type="button" data-act="sk-ana" data-id="${id}"><span class="ico">${ICON.chart}</span>Analytics</button><span class="grow"></span>${p.games ? `<button class="btn ghost" type="button" data-act="g-new" data-id="${id}">Log game</button>` : ""}${timerBtn}<button class="btn primary" type="button" data-act="sk-log" data-id="${id}"><span class="ico">${ICON.plus}</span>Log practice</button></div>` +
       `</div>`;
   }
 
@@ -192,6 +201,7 @@ function syncSkillForm() {
   $("k-goalSel").hidden = !level;
   if (level) fillGoalSelect(val("k-goalSel"));
   $("k-cubeF").hidden = kind !== "time";
+  $("k-eventF").hidden = kind !== "time" || !$<HTMLInputElement>("k-cube").checked;
   $<HTMLInputElement>("k-goal").placeholder = kind === "time" ? "e.g. 1:00" : "e.g. 1500";
   $<HTMLTextAreaElement>("k-ladder").placeholder = level
     ? "One grade per line, easiest first:\nWhite belt\nYellow belt\nGreen belt"
@@ -213,6 +223,8 @@ function applyPreset(i: number) {
   setVal("k-goal", "");
   setStandard(x.standard, x.metric?.kind || "higher");
   $<HTMLInputElement>("k-cube").checked = !!x.cube;
+  setVal("k-event", x.event || "333");
+  if (x.cube) setVal("k-name", CUBE_EVENT[x.event || "333"].name);
   document.querySelectorAll<HTMLElement>("#k-presets .chip").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.i! === i)));
   syncSkillForm();
 }
@@ -248,6 +260,8 @@ export function fillSkill(p: Pursuit | null): void {
   setVal("k-goal", p?.goal != null && p.metric && kind !== "level" ? (kind === "time" ? fmtTime(p.goal).replace(/s$/, "") : String(p.goal)) : "");
   setStandard(p?.standard, kind);
   $<HTMLInputElement>("k-cube").checked = !!p?.cube;
+  $("k-event").innerHTML = CUBE_EVENTS.map((e) => `<option value="${e.id}">${esc(e.name)}${e.format === "mo3" ? " · mean of 3" : ""}</option>`).join("");
+  setVal("k-event", p?.event || "333");
   setVal("k-note", p?.note || "");
   syncSkillForm();
   if (kind === "level") fillGoalSelect(p?.goal != null ? String(p.goal) : "");
@@ -277,6 +291,7 @@ function saveSkill() {
       ? { name: val("k-std").trim() || "My standard", note: val("k-std").trim() === (prev?.standard?.name || presetStd()) ? stdNote : "", tiers: parseLadder(val("k-ladder"), kind) }
       : null,
     cube: $<HTMLInputElement>("k-cube").checked,
+    event: val("k-event"),
   });
   if (track && val("k-ladder").trim() && !p.standard) return toast(kind === "level" ? "Add one grade per line." : "Write each rung as Name = value, e.g. Sub-30 = 30.");
   // Changing how the result is measured re-judges old PBs; the XP already paid stays.
@@ -303,7 +318,12 @@ function deleteSkill(id: string) {
   const xp = logs.reduce((s, l) => s + (l.xp || 0), 0);
   if (xp) award({ delta: -xp, title: p.name, cat: p.cat, quiet: true });
   logs.forEach((l) => drop("practice", l.id));
+  const games = S.data.games.filter((g) => g.skill === id);
+  const gxp = games.reduce((t, g) => t + (g.xp || 0), 0);
+  if (gxp) award({ delta: -gxp, title: p.name, cat: p.cat, quiet: true });
+  games.forEach((g) => drop("games", g.id));
   drop("pursuits", id);
+  if (anaId === id) anaId = null;
   if (openId === id) openId = null;
   toast("Skill deleted");
 }
@@ -326,7 +346,7 @@ function syncPracticeForm() {
     $("r-valL").textContent = m.name + " (optional)";
     $<HTMLInputElement>("r-val").placeholder = m.kind === "time" ? "1:23.45" : m.unit ? `e.g. 1200 ${m.unit}` : "e.g. 1200";
     $<HTMLInputElement>("r-val").inputMode = m.kind === "time" ? "text" : "decimal";
-    const best = p ? skillSummary(p, S.data.practice).best : null;
+    const best = p ? skillSummary(p, S.data.practice, undefined, S.data.games).best : null;
     const st = p ? standardStatus(p, best?.value) : null;
     $("r-valH").textContent =
       (best ? `Best so far: ${fmtValue(best.value, m, p?.standard)}. Beat it for +${PRACTICE.pbXp} XP.` : "Your first result sets the baseline to beat.") +
@@ -375,9 +395,9 @@ export function commitPractice(
   prev: PracticeLog | null,
   f: { date: string; mins: number; value: number | null; note: string; solves?: (number | null)[]; ao5?: number | null },
 ): PracticeLog {
-  const before = skillSummary(p, S.data.practice);
+  const before = skillSummary(p, S.data.practice, undefined, S.data.games);
   const rankBefore = standardStatus(p, before.best?.value);
-  const pb = isPb(f.value, logsOf(p.id), p.metric, prev?.id);
+  const pb = isPb(f.value, [...logsOf(p.id), ...gamePoints(S.data.games, p.id)], p.metric, prev?.id);
   const xp = practiceXp(f.mins, pb);
   const l: PracticeLog = {
     id: prev?.id || newId(),
@@ -402,7 +422,7 @@ export function commitPractice(
     const diff = xp - (prev?.xp || 0);
     if (diff) award({ delta: diff, title: `${p.name} practice`, cat: p.cat });
   }
-  const now = skillSummary(p, S.data.practice);
+  const now = skillSummary(p, S.data.practice, undefined, S.data.games);
   const rankNow = standardStatus(p, now.best?.value);
   const msgs: string[] = [];
   if (pb && p.metric) msgs.push(`New PB · ${p.metric.name}: ${fmtValue(f.value, p.metric, p.standard)}`);
@@ -420,7 +440,7 @@ export function commitPractice(
 
 let closeSheetSoon = () => {};
 
-export function openPractice(skillId: string | null, open: (name: "practice" | "skill", it?: PracticeLog | Pursuit | null) => void): void {
+export function openPractice(skillId: string | null, open: (name: "practice" | "skill" | "game", it?: PracticeLog | Pursuit | ChessGame | null) => void): void {
   if (!S.data.pursuits.length) return open("skill", null);
   logFor = skillId;
   open("practice", null);
@@ -438,7 +458,7 @@ export function deleteFromSheet(name: "skill" | "practice", id: string): void {
 }
 
 /** Clicks on the Skills tab. Returns true if handled. */
-export function skillAction(act: string, el: HTMLElement, open: (name: "practice" | "skill", it?: PracticeLog | Pursuit | null) => void): boolean {
+export function skillAction(act: string, el: HTMLElement, open: (name: "practice" | "skill" | "game", it?: PracticeLog | Pursuit | ChessGame | null) => void): boolean {
   const id = el.dataset.id || "";
   switch (act) {
     case "sk-open":
@@ -458,6 +478,24 @@ export function skillAction(act: string, el: HTMLElement, open: (name: "practice
     case "sk-edit":
       if (byId(id)) open("skill", byId(id));
       return true;
+    case "sk-ana":
+      anaId = id;
+      render();
+      window.scrollTo({ top: 0 });
+      return true;
+    case "sk-back":
+      anaId = null;
+      render();
+      return true;
+    case "g-new":
+      gameFor(id);
+      open("game", null);
+      return true;
+    case "edit-g": {
+      const g = S.data.games.find((x) => x.id === id);
+      if (g) open("game", g);
+      return true;
+    }
     case "edit-p": {
       const l = S.data.practice.find((x) => x.id === id);
       if (l) open("practice", l);
@@ -490,6 +528,15 @@ export function initSkills(close: () => void): void {
     syncPracticeForm();
   });
   $("r-mins").addEventListener("input", syncPracticeForm);
+  $("k-cube").addEventListener("change", syncSkillForm);
+  $("k-event").addEventListener("change", () => {
+    // Switching event renames the skill (unless it has a custom name) and swaps in that event's WCA ladder.
+    const e = CUBE_EVENT[val("k-event")];
+    const name = val("k-name").trim();
+    if (!name || name === "Rubik's cube" || CUBE_EVENTS.some((x) => x.name === name)) setVal("k-name", e.name);
+    setStandard(cubeStandard(e.id), "time");
+    setVal("k-mname", val("k-mname") || "Best single");
+  });
   $("k-ladder").addEventListener("input", () => { if (val("k-kind") === "level") fillGoalSelect(val("k-goalSel")); });
   $("r-skill").addEventListener("change", () => {
     setVal("r-val", "");

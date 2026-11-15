@@ -182,6 +182,9 @@ export const PRACTICE = {
   levelBase: 30,
   /** Default category for a new skill's XP. */
   cat: "mind" as CatId,
+  /** A logged game pays this, and a written review (key moment or lesson) pays the extra. Results don't change it: reviewing a loss is worth as much as a win. */
+  gameXp: 8,
+  reviewXp: 12,
   /** Hour milestones shown on each skill. */
   milestones: [1, 5, 10, 25, 50, 100, 250, 500, 1000],
 };

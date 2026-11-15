@@ -4,7 +4,7 @@
 import { PRACTICE } from "./config.js";
 import { daysAgoKey, dkey, weekStart } from "./dates.js";
 import { CAT, levelOf } from "./xp.js";
-import type { CatId, MetricKind, PracticeLog, Pursuit, SkillMetric, Standard, Tier } from "./types.js";
+import type { CatId, ChessGame, MetricKind, PracticeLog, Pursuit, SkillMetric, Standard, Tier } from "./types.js";
 
 export const METRIC_KINDS: { id: MetricKind; label: string }[] = [
   { id: "time", label: "Time · lower is better" },
@@ -92,10 +92,22 @@ export function fmtValue(v: number | null | undefined, metric: SkillMetric | nul
 /** True if result a beats result b under this metric. */
 export const beats = (a: number, b: number, kind: MetricKind) => (kind === "higher" || kind === "level" ? a > b : a < b);
 
+/** Anything that carries a result: a practice log, or a game with your rating after it. */
+export interface ResultPoint {
+  id: string;
+  date: string;
+  created: number;
+  value: number | null;
+}
+
+/** A skill's games as result points: your rating after each game. */
+export const gamePoints = (games: ChessGame[] | undefined, skillId: string): ResultPoint[] =>
+  (games || []).filter((g) => g.skill === skillId && g.myRating != null).map((g) => ({ id: g.id, date: g.date, created: g.created, value: g.myRating }));
+
 /** Best result logged for a skill, optionally ignoring one log (the one being edited). */
-export function bestOf(logs: PracticeLog[], metric: SkillMetric | null, excludeId?: string): { value: number; date: string; id: string } | null {
+export function bestOf(logs: ResultPoint[], metric: SkillMetric | null, excludeId?: string): { value: number; date: string; id: string } | null {
   if (!metric) return null;
-  let best: PracticeLog | null = null;
+  let best: ResultPoint | null = null;
   for (const l of logs) {
     if (l.id === excludeId || l.value == null) continue;
     if (!best || beats(l.value, best.value!, metric.kind) || (l.value === best.value && l.date < best.date)) best = l;
@@ -104,7 +116,7 @@ export function bestOf(logs: PracticeLog[], metric: SkillMetric | null, excludeI
 }
 
 /** A result is a PB if it beats every other logged result. The very first result is the baseline, not a PB. */
-export function isPb(value: number | null, logs: PracticeLog[], metric: SkillMetric | null, excludeId?: string): boolean {
+export function isPb(value: number | null, logs: ResultPoint[], metric: SkillMetric | null, excludeId?: string): boolean {
   if (value == null || !metric) return false;
   const best = bestOf(logs, metric, excludeId);
   return !!best && beats(value, best.value, metric.kind);
@@ -233,14 +245,16 @@ export interface SkillSummary {
 }
 
 /** Everything the tracker shows for one skill. */
-export function skillSummary(p: Pursuit, all: PracticeLog[], now: Date = new Date()): SkillSummary {
+export function skillSummary(p: Pursuit, all: PracticeLog[], now: Date = new Date(), games?: ChessGame[]): SkillSummary {
   const logs = all.filter((l) => l.skill === p.id);
+  const points: ResultPoint[] = [...logs, ...gamePoints(games, p.id)];
   const xp = logs.reduce((s, l) => s + (Number(l.xp) || 0), 0);
   const L = levelOf(xp, PRACTICE.levelBase);
   const totalMins = logs.reduce((s, l) => s + (Number(l.mins) || 0), 0);
   const ws = weekStart(now);
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date) || a.created - b.created);
-  const best = bestOf(logs, p.metric);
+  const best = bestOf(points, p.metric);
+  const pts = [...points].sort((a, b) => a.date.localeCompare(b.date) || a.created - b.created);
   const hours = totalMins / 60;
   return {
     xp,
@@ -252,7 +266,7 @@ export function skillSummary(p: Pursuit, all: PracticeLog[], now: Date = new Dat
     streak: practiceStreak(logs, now),
     best,
     latest: sorted[sorted.length - 1] || null,
-    series: p.metric ? sorted.filter((l) => l.value != null).map((l) => ({ date: l.date, value: l.value! })) : [],
+    series: p.metric ? pts.filter((l) => l.value != null).map((l) => ({ date: l.date, value: l.value! })) : [],
     nextHours: PRACTICE.milestones.find((h) => h > hours) ?? null,
     lastHours: [...PRACTICE.milestones].reverse().find((h) => h <= hours) ?? null,
     goalReached: goalMet(best?.value, p),
@@ -287,6 +301,8 @@ export function normalizePursuit(raw: Partial<Pursuit> & { id: string }, now = D
     note: String(raw.note || "").trim().slice(0, 200),
     standard: metric ? normalizeStandard(raw.standard, kind) : null,
     cube: !!raw.cube && kind === "time",
+    games: !!raw.games,
+    ...(raw.cube && kind === "time" ? { event: String(raw.event || "333").slice(0, 8) } : {}),
     ...(raw.u ? { u: raw.u } : {}),
   };
 }
@@ -312,6 +328,8 @@ export interface SkillPreset {
   cat: CatId;
   standard: Standard | null;
   cube?: boolean;
+  event?: string;
+  games?: boolean;
 }
 
 /** Ideas offered when adding a skill, each with the recognised standard it's ranked against. Everything stays editable. */
@@ -322,6 +340,7 @@ export const SKILL_PRESETS: SkillPreset[] = [
     metric: { name: "Best single", kind: "time", unit: "" },
     cat: "mind",
     cube: true,
+    event: "333",
     standard: {
       name: "WCA 3x3x3",
       note: "World Cube Association rules, as used at CubingZA competitions in South Africa. Cubers rank themselves by sub-X singles; the WCA also ranks the average of 5.",
@@ -342,6 +361,7 @@ export const SKILL_PRESETS: SkillPreset[] = [
     icon: "♟️",
     metric: { name: "Rating", kind: "higher", unit: "elo" },
     cat: "mind",
+    games: true,
     standard: {
       name: "Chess SA rating (Elo)",
       note: "Chess South Africa runs the national Elo rating. The top rungs are the ratings FIDE needs for its titles; the titles also need norms from rated events.",

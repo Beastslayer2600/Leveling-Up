@@ -425,6 +425,10 @@ export interface Pursuit {
   standard?: Standard | null;
   /** Speedcubing mode: the timer shows scrambles and WCA inspection. */
   cube?: boolean;
+  /** WCA event id for speedcubing skills: "333", "444", "777", "pyram"… */
+  event?: string;
+  /** Log individual games with reviews (chess and other rated games). */
+  games?: boolean;
   u?: number;
 }
 
@@ -449,10 +453,46 @@ export interface PracticeLog {
   u?: number;
 }
 
+export type GameResult = "win" | "draw" | "loss";
+export type TimeControl = "classical" | "rapid" | "blitz" | "bullet" | "daily";
+
+/** One game played on a games skill (chess), with its review. */
+export interface ChessGame {
+  id: string;
+  /** Pursuit id. */
+  skill: string;
+  date: string;
+  created: number;
+  result: GameResult;
+  colour: "white" | "black" | null;
+  opponent: string;
+  oppRating: number | null;
+  /** Your rating after this game, if you know it. Feeds the rating chart and the standard. */
+  myRating: number | null;
+  control: TimeControl;
+  rated: boolean;
+  opening: string;
+  /** Accuracy % from a chess.com or Lichess review. */
+  accuracy: number | null;
+  blunders: number | null;
+  mistakes: number | null;
+  inaccuracies: number | null;
+  /** The moment the game turned. */
+  keyMoment: string;
+  /** What to take into the next game. */
+  lesson: string;
+  /** Your own 1-5 rating of how well you played. */
+  selfRating: number | null;
+  link: string;
+  xp: number;
+  u?: number;
+}
+
 export interface Data {
   quests: Quest[];
   pursuits: Pursuit[];
   practice: PracticeLog[];
+  games: ChessGame[];
   rhythm: RhythmDay[];
   journal: JournalEntry[];
   focusSlots: FocusSlot[];

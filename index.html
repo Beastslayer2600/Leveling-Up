@@ -305,6 +305,8 @@
     <!-- SKILLS -->
     <div class="view" id="v-skills" hidden>
       <header class="view-h"><div><p class="kicker">Practice · results · levels</p><h2>Skills</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>Log practice</button></header>
+      <div class="sk-ana" id="sk-ana" hidden></div>
+      <div class="sk-mainwrap" id="sk-main">
       <div class="stats3 big" id="sk-stats">
         <div class="stat"><span class="sl">This week</span><b id="sk-week">0m</b></div>
         <div class="stat"><span class="sl">All time</span><b id="sk-total">0m</b></div>
@@ -318,6 +320,7 @@
         <div class="sec-h"><h2>Recent practice</h2><span>Tap to edit</span></div>
         <div class="list" id="sk-recent"></div>
       </section>
+      </div>
     </div>
 
     <!-- CHARACTER -->
@@ -540,6 +543,7 @@
       <p class="hint" id="k-stdNote" hidden></p>
       <div class="fld"><label for="k-ladder">Ladder (optional)</label><textarea class="in" id="k-ladder" rows="5"></textarea></div>
       <label class="chk" id="k-cubeF"><input type="checkbox" id="k-cube"><span>Speedcubing timer: WCA scrambles and 15-second inspection</span></label>
+      <div class="fld" id="k-eventF"><label for="k-event">WCA event</label><select class="in" id="k-event"></select><small class="hint">Each puzzle is its own skill with its own PBs, ladder and scrambles. Add another skill for each cube you train.</small></div>
     </div>
     <div class="fld"><label for="k-note">Why it matters (optional)</label><input class="in" id="k-note" maxlength="200" placeholder="Sub-minute solve by March"></div>
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="k-save">Add skill</button></div>
@@ -558,6 +562,50 @@
     <div class="fld"><label for="r-note">Notes (optional)</label><input class="in" id="r-note" maxlength="200" placeholder="What you worked on: F2L, endgames, a new song"></div>
     <p class="hint" id="r-xp"></p>
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="r-save">Log it</button></div>
+  </form>
+
+  <!-- chess game + review -->
+  <form class="sheet" id="f-game" autocomplete="off" hidden>
+    <h3 id="g-h">Log game</h3>
+    <fieldset class="fld"><legend>Result</legend><div class="seg">
+      <input type="radio" name="gres" id="gr-w" value="win"><label for="gr-w">Win</label>
+      <input type="radio" name="gres" id="gr-d" value="draw"><label for="gr-d">Draw</label>
+      <input type="radio" name="gres" id="gr-l" value="loss"><label for="gr-l">Loss</label></div></fieldset>
+    <div class="row">
+      <fieldset class="fld"><legend>Colour</legend><div class="seg">
+        <input type="radio" name="gcol" id="gc-w" value="white"><label for="gc-w">White</label>
+        <input type="radio" name="gcol" id="gc-b" value="black"><label for="gc-b">Black</label></div></fieldset>
+      <div class="fld"><label for="g-date">Date</label><input class="in" id="g-date" type="date" required></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-control">Time control</label><select class="in" id="g-control"></select></div>
+      <div class="fld"><label for="g-opening">Opening</label><input class="in" id="g-opening" maxlength="60" list="g-openings" placeholder="Italian, Sicilian…"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-opp">Opponent</label><input class="in" id="g-opp" maxlength="60" placeholder="Name or username"></div>
+      <div class="fld"><label for="g-oppr">Their rating</label><input class="in" id="g-oppr" type="number" min="100" max="3500" inputmode="numeric" placeholder="1350"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-myr">Your rating after</label><input class="in" id="g-myr" type="number" min="100" max="3500" inputmode="numeric" placeholder="Optional"></div>
+      <label class="chk g-rated"><input type="checkbox" id="g-rated"><span>Rated game</span></label>
+    </div>
+    <p class="hint" id="g-exp"></p>
+    <h4 class="g-sub">Review</h4>
+    <div class="row3">
+      <div class="fld"><label for="g-acc">Accuracy %</label><input class="in" id="g-acc" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="82.4"></div>
+      <div class="fld"><label for="g-bl">Blunders</label><input class="in" id="g-bl" type="number" min="0" max="99" inputmode="numeric"></div>
+      <div class="fld"><label for="g-mi">Mistakes</label><input class="in" id="g-mi" type="number" min="0" max="99" inputmode="numeric"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-in">Inaccuracies</label><input class="in" id="g-in" type="number" min="0" max="99" inputmode="numeric"></div>
+      <fieldset class="fld"><legend>How you played</legend><div class="seg" id="g-self"></div></fieldset>
+    </div>
+    <div class="fld"><label for="g-key">Key moment</label><textarea class="in" id="g-key" maxlength="400" rows="2" placeholder="Where the game turned: move 18, I missed the fork on e5"></textarea></div>
+    <div class="fld"><label for="g-lesson">Lesson for next game</label><textarea class="in" id="g-lesson" maxlength="400" rows="2" placeholder="Check every capture before moving"></textarea></div>
+    <div class="fld"><label for="g-link">Game link (optional)</label><input class="in" id="g-link" maxlength="300" type="url" placeholder="Lichess or chess.com link"></div>
+    <p class="hint" id="g-xp"></p>
+    <datalist id="g-openings"></datalist>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="g-save">Log it</button></div>
   </form>
 
   <!-- journal entry -->

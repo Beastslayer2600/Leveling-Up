@@ -93,7 +93,7 @@ export function initialTab(): Tab {
 }
 
 /** Upsert a record in one of the collections. */
-export function put<K extends "quests" | "pursuits" | "practice" | "rhythm" | "journal" | "focusSlots" | "workouts" | "social" | "money" | "meals" | "days">(
+export function put<K extends "quests" | "pursuits" | "practice" | "games" | "rhythm" | "journal" | "focusSlots" | "workouts" | "social" | "money" | "meals" | "days">(
   coll: K,
   obj: Data[K][number],
 ): void {
@@ -105,7 +105,7 @@ export function put<K extends "quests" | "pursuits" | "practice" | "rhythm" | "j
   save();
 }
 
-export function drop(coll: "quests" | "pursuits" | "practice" | "journal" | "workouts" | "social" | "money" | "meals" | "days", id: string): void {
+export function drop(coll: "quests" | "pursuits" | "practice" | "games" | "journal" | "workouts" | "social" | "money" | "meals" | "days", id: string): void {
   (S.data[coll] as { id: string }[]) = (S.data[coll] as { id: string }[]).filter((x) => x.id !== id);
   S.data.tomb = { ...S.data.tomb, [id]: Date.now() };
   save();
