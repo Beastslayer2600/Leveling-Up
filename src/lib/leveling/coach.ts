@@ -1,6 +1,7 @@
 import { daysAgoKey, daysSince } from "./dates.js";
 import { isDone } from "./missions.js";
 import { pbMap } from "./training.js";
+import { fmtMins, fmtValue, skillSummary } from "./practice.js";
 import { activeCats, catName } from "./prefs.js";
 import { CAT, DIFF, PLAYER_BASE, levelOf, type DiffId } from "./xp.js";
 import type { Data, Kind, Period, Suggestion } from "./types.js";
@@ -22,6 +23,13 @@ export function digest(data: Data, now: Date = new Date()): string {
   L.push(`Open missions: ${open.slice(0, 15).map((q) => `${q.title} [${cn(q.cat)}]`).join("; ") || "none"}.`);
   const sk = sheet.skills.map((s) => `${s.name} ${s.level}/10`).join(", ");
   if (sk) L.push(`Skills: ${sk}.`);
+  if (on.skills && data.pursuits.length) {
+    const tr = data.pursuits.map((p) => {
+      const s = skillSummary(p, data.practice, now);
+      return `${p.name} LV${s.level}, ${fmtMins(s.totalMins)} total, ${fmtMins(s.weekMins)} this week${p.weeklyMins ? ` (target ${fmtMins(p.weeklyMins)})` : ""}${s.best && p.metric ? `, best ${p.metric.name.toLowerCase()} ${fmtValue(s.best.value, p.metric)}` : ""}${p.goal && p.metric ? ` (goal ${fmtValue(p.goal, p.metric)})` : ""}`;
+    });
+    L.push(`Skills being levelled: ${tr.join("; ")}.`);
+  }
   if (on.body) {
     const w14 = data.workouts.filter((w) => w.date >= d14);
     L.push(`Last 14 days: ${w14.filter((w) => w.type === "gym").length} gym sessions, ${sum(w14.filter((w) => w.type === "cardio"), (w) => w.mins)} cardio minutes.`);

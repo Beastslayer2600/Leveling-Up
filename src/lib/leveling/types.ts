@@ -379,8 +379,120 @@ export interface FocusRun {
   bonusXp: number;
 }
 
+/** How a skill's result is measured. "time" is lower-is-better and entered as m:ss; "level" is a named grade from the skill's standard. */
+export type MetricKind = "time" | "higher" | "lower" | "level";
+
+/** One rung of a competitive standard, e.g. "Sub-20" at 20 s, or "FIDE Master" at 2300. */
+export interface Tier {
+  name: string;
+  value: number;
+}
+
+/** The recognised scale a skill is measured against (WCA, Chess SA rating, UNISA grades, CEFR…). */
+export interface Standard {
+  name: string;
+  /** Short note on what the scale is and who runs it. */
+  note: string;
+  /** Easiest first. */
+  tiers: Tier[];
+}
+
+export interface SkillMetric {
+  /** What the number is, e.g. "Best solve", "Rating", "Puzzle score". */
+  name: string;
+  kind: MetricKind;
+  /** Shown after numbers, e.g. "elo", "wpm". Unused for time. */
+  unit: string;
+}
+
+/** A skill the player is levelling up, e.g. Rubik's cube or chess. */
+export interface Pursuit {
+  id: string;
+  name: string;
+  /** One emoji or a short mark shown on the card. */
+  icon: string;
+  /** Category that gets this skill's XP. */
+  cat: CatId;
+  created: number;
+  /** The result to track, if any. Practice time is always tracked. */
+  metric: SkillMetric | null;
+  /** Practice target per week, in minutes. */
+  weeklyMins: number | null;
+  /** The result being worked towards, in the metric's terms (seconds for time). */
+  goal: number | null;
+  note: string;
+  /** The competitive standard the result is ranked against. */
+  standard?: Standard | null;
+  /** Speedcubing mode: the timer shows scrambles and WCA inspection. */
+  cube?: boolean;
+  /** WCA event id for speedcubing skills: "333", "444", "777", "pyram"… */
+  event?: string;
+  /** Log individual games with reviews (chess and other rated games). */
+  games?: boolean;
+  u?: number;
+}
+
+/** One practice session on a skill. */
+export interface PracticeLog {
+  id: string;
+  /** Pursuit id. */
+  skill: string;
+  date: string;
+  created: number;
+  mins: number;
+  /** The result this session, in the metric's terms (seconds for time). */
+  value: number | null;
+  note: string;
+  /** This result beat every earlier one. */
+  pb: boolean;
+  xp: number;
+  /** Timer sessions: every solve in seconds, null for a DNF. */
+  solves?: (number | null)[];
+  /** Best WCA average of 5 in this session. */
+  ao5?: number | null;
+  u?: number;
+}
+
+export type GameResult = "win" | "draw" | "loss";
+export type TimeControl = "classical" | "rapid" | "blitz" | "bullet" | "daily";
+
+/** One game played on a games skill (chess), with its review. */
+export interface ChessGame {
+  id: string;
+  /** Pursuit id. */
+  skill: string;
+  date: string;
+  created: number;
+  result: GameResult;
+  colour: "white" | "black" | null;
+  opponent: string;
+  oppRating: number | null;
+  /** Your rating after this game, if you know it. Feeds the rating chart and the standard. */
+  myRating: number | null;
+  control: TimeControl;
+  rated: boolean;
+  opening: string;
+  /** Accuracy % from a chess.com or Lichess review. */
+  accuracy: number | null;
+  blunders: number | null;
+  mistakes: number | null;
+  inaccuracies: number | null;
+  /** The moment the game turned. */
+  keyMoment: string;
+  /** What to take into the next game. */
+  lesson: string;
+  /** Your own 1-5 rating of how well you played. */
+  selfRating: number | null;
+  link: string;
+  xp: number;
+  u?: number;
+}
+
 export interface Data {
   quests: Quest[];
+  pursuits: Pursuit[];
+  practice: PracticeLog[];
+  games: ChessGame[];
   rhythm: RhythmDay[];
   journal: JournalEntry[];
   focusSlots: FocusSlot[];

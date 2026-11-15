@@ -167,3 +167,24 @@ export const SESSION = {
   alertLiveMs: 5_000,
   maxLabel: 24,
 };
+
+/* Skills: your own things to level up (Rubik's cube, chess, guitar…), each with its own level and tracker. */
+export const PRACTICE = {
+  /** XP per minute of practice. 30 minutes pays 15 XP. */
+  xpPerMin: 0.5,
+  /** Most XP one practice log can pay, before any PB bonus. */
+  maxSessionXp: 60,
+  /** Every log pays at least this, so a quick 5-minute rep still counts. */
+  minSessionXp: 3,
+  /** Bonus for beating your best result. */
+  pbXp: 25,
+  /** Skill levels cost this × L XP to go from L to L+1. LV5 ≈ 10 hours, LV10 ≈ 45 hours. */
+  levelBase: 30,
+  /** Default category for a new skill's XP. */
+  cat: "mind" as CatId,
+  /** A logged game pays this, and a written review (key moment or lesson) pays the extra. Results don't change it: reviewing a loss is worth as much as a win. */
+  gameXp: 8,
+  reviewXp: 12,
+  /** Hour milestones shown on each skill. */
+  milestones: [1, 5, 10, 25, 50, 100, 250, 500, 1000],
+};

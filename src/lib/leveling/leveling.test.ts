@@ -212,9 +212,9 @@ describe("virtues", () => {
 });
 
 describe("achievements", () => {
-  it("has 38 achievements with unique ids", () => {
-    expect(ACH).toHaveLength(38);
-    expect(new Set(ACH.map((a) => a.id)).size).toBe(38);
+  it("has 41 achievements with unique ids", () => {
+    expect(ACH).toHaveLength(41);
+    expect(new Set(ACH.map((a) => a.id)).size).toBe(41);
   });
   it("unlocks data achievements once", () => {
     const d = blankData();

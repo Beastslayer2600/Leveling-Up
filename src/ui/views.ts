@@ -12,6 +12,7 @@ import { journaledOn } from "../lib/leveling/journal";
 import { renderJournal } from "./journal";
 import { renderFocus, renderMorningCard, settleTimer } from "./rhythm";
 import { renderSession } from "./session";
+import { renderSkills } from "./skills";
 import { renderMode, sync } from "./sync";
 import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, setCurrency, shortD, sumBy } from "./dom";
 import { S, VIEWS, enabledViews, type Tab } from "./state";
@@ -22,6 +23,7 @@ export const TAB_META: Record<Tab, { label: string; sub: string; fab: string }> 
   body: { label: "Body", sub: "Training, fuel, steps", fab: "Log training" },
   social: { label: "Social", sub: "Posts and people", fab: "Log social" },
   money: { label: "Money", sub: "Ledger and calls", fab: "Log money" },
+  skills: { label: "Skills", sub: "Practice and level up", fab: "Log practice" },
   character: { label: "Character", sub: "Sheet and trophies", fab: "Add skill" },
 };
 
@@ -87,7 +89,7 @@ export function render(): void {
   $("p-signin").hidden = sync.mode === "server";
 
   renderHudSide();
-  ({ missions: renderMissions, journal: renderJournal, body: renderBody, social: renderSocial, money: renderMoney, character: renderCharacter })[S.tab]();
+  ({ missions: renderMissions, journal: renderJournal, body: renderBody, social: renderSocial, money: renderMoney, skills: renderSkills, character: renderCharacter })[S.tab]();
   renderFocus();
   renderSession();
 }

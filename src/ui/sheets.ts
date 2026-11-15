@@ -10,9 +10,11 @@ import { $, esc, fmtN, radio, radioVal, setVal, shortD, val } from "./dom";
 import { toast } from "./fx";
 import { fillSetup, initSetup } from "./customize";
 import { deleteJournal, fillJournal, saveJournalEdit } from "./journal";
+import { deleteFromSheet, fillPractice, fillSkill, initSkills } from "./skills";
+import { deleteGame, fillGame, initGames } from "./skillstats";
 import { S, after, award, drop, newId, put, render, save } from "./state";
 
-const FORMS = ["mission", "workout", "meal", "targets", "social", "money", "entry", "reach", "plan", "profile", "journal", "setup"] as const;
+const FORMS = ["mission", "workout", "meal", "targets", "social", "money", "entry", "reach", "plan", "profile", "journal", "setup", "skill", "practice", "game"] as const;
 export type SheetName = (typeof FORMS)[number];
 
 type Item = { id: string } | null;
@@ -29,6 +31,9 @@ const FILL: Record<SheetName, (it: never) => void> = {
   profile: fillProfile,
   journal: fillJournal,
   setup: fillSetup,
+  skill: fillSkill,
+  practice: fillPractice,
+  game: fillGame,
 };
 
 let lastFocus: HTMLElement | null = null;
@@ -79,6 +84,18 @@ export function initSheets(): void {
         toast("Entry deleted");
         return;
       }
+      if (S.sheetName === "game") {
+        deleteGame(S.editId!);
+        closeSheet();
+        render();
+        return;
+      }
+      if (S.sheetName === "skill" || S.sheetName === "practice") {
+        deleteFromSheet(S.sheetName, S.editId!);
+        closeSheet();
+        render();
+        return;
+      }
       if (S.sheetName === "entry") {
         const k = ENTRY[S.entryType].key;
         S.data.sheet = { ...S.data.sheet, [k]: (S.data.sheet[k] as { id: string }[]).filter((x) => x.id !== S.editId) };
@@ -109,6 +126,8 @@ export function initSheets(): void {
   initEntry();
   initRelease();
   initProfile();
+  initSkills(closeSheet);
+  initGames(closeSheet);
   initSetup(() => openSheet("setup"), closeSheet);
   $("f-journal").addEventListener("submit", (e) => {
     e.preventDefault();

@@ -302,6 +302,27 @@
       </section>
     </div>
 
+    <!-- SKILLS -->
+    <div class="view" id="v-skills" hidden>
+      <header class="view-h"><div><p class="kicker">Practice · results · levels</p><h2>Skills</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>Log practice</button></header>
+      <div class="sk-ana" id="sk-ana" hidden></div>
+      <div class="sk-mainwrap" id="sk-main">
+      <div class="stats3 big" id="sk-stats">
+        <div class="stat"><span class="sl">This week</span><b id="sk-week">0m</b></div>
+        <div class="stat"><span class="sl">All time</span><b id="sk-total">0m</b></div>
+        <div class="stat"><span class="sl">Top skill</span><b id="sk-top">—</b></div>
+      </div>
+      <section class="sec">
+        <div class="sec-h"><h2>Your skills</h2><button class="linkbtn gold" type="button" data-act="sk-new">+ New skill</button></div>
+        <div class="sk-grid" id="sk-list"></div>
+      </section>
+      <section class="sec" id="sk-recentSec" hidden>
+        <div class="sec-h"><h2>Recent practice</h2><span>Tap to edit</span></div>
+        <div class="list" id="sk-recent"></div>
+      </section>
+      </div>
+    </div>
+
     <!-- CHARACTER -->
     <div class="view" id="v-character" hidden>
       <header class="view-h"><div><p class="kicker">Sheet · skills · trophies</p><h2>Character</h2></div><button class="btn primary vh-act" type="button" data-fab><span data-icon="plus"></span>Add skill</button></header>
@@ -316,7 +337,7 @@
         </section>
       </div>
       <section class="sec">
-        <div class="sec-h"><h2>Skills</h2><button class="linkbtn gold" type="button" data-add="skill">+ Add</button></div>
+        <div class="sec-h"><h2>Skill ratings</h2><button class="linkbtn gold" type="button" data-add="skill">+ Add</button></div>
         <div class="grid2" id="ch-skills"></div>
       </section>
       <section class="sec">
@@ -494,6 +515,97 @@
     <div class="fld" id="e-lvF"><label for="e-lv">Level <span id="e-lvN">5</span> / 10</label><input id="e-lv" type="range" min="1" max="10" value="5"></div>
     <div class="fld"><label for="e-b" id="e-bL">Note (optional)</label><input class="in" id="e-b" maxlength="200"></div>
     <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="e-save">Save</button></div>
+  </form>
+
+  <!-- tracked skill -->
+  <form class="sheet" id="f-skill" autocomplete="off" hidden>
+    <h3 id="k-h">New skill</h3>
+    <div class="fld" id="k-presetF"><label>Start from</label><div class="presets" id="k-presets"></div></div>
+    <div class="row k-top">
+      <div class="fld k-icon"><label for="k-icon">Icon</label><input class="in" id="k-icon" maxlength="4" placeholder="🧊"></div>
+      <div class="fld"><label for="k-name">Skill</label><input class="in" id="k-name" maxlength="60" required placeholder="Rubik's cube, chess, guitar…"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="k-cat">XP goes to</label><select class="in" id="k-cat"></select></div>
+      <div class="fld"><label for="k-week">Practice target / week (min)</label><input class="in" id="k-week" type="number" min="0" max="3000" step="5" inputmode="numeric" placeholder="Optional, e.g. 120"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="k-track"><span>Track a result (solve time, rating, score…)</span></label>
+    <div id="k-metricF">
+      <div class="row">
+        <div class="fld"><label for="k-mname">Result name</label><input class="in" id="k-mname" maxlength="40" placeholder="Best solve"></div>
+        <div class="fld"><label for="k-kind">Measured as</label><select class="in" id="k-kind"></select></div>
+      </div>
+      <div class="row">
+        <div class="fld" id="k-unitF"><label for="k-unit">Unit (optional)</label><input class="in" id="k-unit" maxlength="12" placeholder="elo, wpm, pts"></div>
+        <div class="fld"><label for="k-goal">Goal (optional)</label><input class="in" id="k-goal" maxlength="16" placeholder="e.g. 1:00"><select class="in" id="k-goalSel" hidden aria-label="Goal grade"></select></div>
+      </div>
+      <div class="fld"><label for="k-std">Ranked against (competitive standard)</label><input class="in" id="k-std" maxlength="60" placeholder="e.g. WCA 3x3x3, Chess SA rating, UNISA grades"></div>
+      <p class="hint" id="k-stdNote" hidden></p>
+      <div class="fld"><label for="k-ladder">Ladder (optional)</label><textarea class="in" id="k-ladder" rows="5"></textarea></div>
+      <label class="chk" id="k-cubeF"><input type="checkbox" id="k-cube"><span>Speedcubing timer: WCA scrambles and 15-second inspection</span></label>
+      <div class="fld" id="k-eventF"><label for="k-event">WCA event</label><select class="in" id="k-event"></select><small class="hint">Each puzzle is its own skill with its own PBs, ladder and scrambles. Add another skill for each cube you train.</small></div>
+    </div>
+    <div class="fld"><label for="k-note">Why it matters (optional)</label><input class="in" id="k-note" maxlength="200" placeholder="Sub-minute solve by March"></div>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="k-save">Add skill</button></div>
+  </form>
+
+  <!-- practice log -->
+  <form class="sheet" id="f-practice" autocomplete="off" hidden>
+    <h3 id="r-h">Log practice</h3>
+    <div class="row">
+      <div class="fld"><label for="r-skill">Skill</label><select class="in" id="r-skill"></select></div>
+      <div class="fld"><label for="r-date">Date</label><input class="in" id="r-date" type="date" required></div>
+    </div>
+    <div class="fld"><label for="r-mins">Minutes practised</label>
+      <div class="r-mins"><input class="in" id="r-mins" type="number" min="1" max="600" inputmode="numeric" required placeholder="30"><div class="seg quick" id="r-quick"></div></div></div>
+    <div class="fld" id="r-valF"><label for="r-val" id="r-valL">Result</label><input class="in" id="r-val" maxlength="16"><select class="in" id="r-valSel" hidden></select><small class="hint" id="r-valH"></small></div>
+    <div class="fld"><label for="r-note">Notes (optional)</label><input class="in" id="r-note" maxlength="200" placeholder="What you worked on: F2L, endgames, a new song"></div>
+    <p class="hint" id="r-xp"></p>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="r-save">Log it</button></div>
+  </form>
+
+  <!-- chess game + review -->
+  <form class="sheet" id="f-game" autocomplete="off" hidden>
+    <h3 id="g-h">Log game</h3>
+    <fieldset class="fld"><legend>Result</legend><div class="seg">
+      <input type="radio" name="gres" id="gr-w" value="win"><label for="gr-w">Win</label>
+      <input type="radio" name="gres" id="gr-d" value="draw"><label for="gr-d">Draw</label>
+      <input type="radio" name="gres" id="gr-l" value="loss"><label for="gr-l">Loss</label></div></fieldset>
+    <div class="row">
+      <fieldset class="fld"><legend>Colour</legend><div class="seg">
+        <input type="radio" name="gcol" id="gc-w" value="white"><label for="gc-w">White</label>
+        <input type="radio" name="gcol" id="gc-b" value="black"><label for="gc-b">Black</label></div></fieldset>
+      <div class="fld"><label for="g-date">Date</label><input class="in" id="g-date" type="date" required></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-control">Time control</label><select class="in" id="g-control"></select></div>
+      <div class="fld"><label for="g-opening">Opening</label><input class="in" id="g-opening" maxlength="60" list="g-openings" placeholder="Italian, Sicilian…"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-opp">Opponent</label><input class="in" id="g-opp" maxlength="60" placeholder="Name or username"></div>
+      <div class="fld"><label for="g-oppr">Their rating</label><input class="in" id="g-oppr" type="number" min="100" max="3500" inputmode="numeric" placeholder="1350"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-myr">Your rating after</label><input class="in" id="g-myr" type="number" min="100" max="3500" inputmode="numeric" placeholder="Optional"></div>
+      <label class="chk g-rated"><input type="checkbox" id="g-rated"><span>Rated game</span></label>
+    </div>
+    <p class="hint" id="g-exp"></p>
+    <h4 class="g-sub">Review</h4>
+    <div class="row3">
+      <div class="fld"><label for="g-acc">Accuracy %</label><input class="in" id="g-acc" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="82.4"></div>
+      <div class="fld"><label for="g-bl">Blunders</label><input class="in" id="g-bl" type="number" min="0" max="99" inputmode="numeric"></div>
+      <div class="fld"><label for="g-mi">Mistakes</label><input class="in" id="g-mi" type="number" min="0" max="99" inputmode="numeric"></div>
+    </div>
+    <div class="row">
+      <div class="fld"><label for="g-in">Inaccuracies</label><input class="in" id="g-in" type="number" min="0" max="99" inputmode="numeric"></div>
+      <fieldset class="fld"><legend>How you played</legend><div class="seg" id="g-self"></div></fieldset>
+    </div>
+    <div class="fld"><label for="g-key">Key moment</label><textarea class="in" id="g-key" maxlength="400" rows="2" placeholder="Where the game turned: move 18, I missed the fork on e5"></textarea></div>
+    <div class="fld"><label for="g-lesson">Lesson for next game</label><textarea class="in" id="g-lesson" maxlength="400" rows="2" placeholder="Check every capture before moving"></textarea></div>
+    <div class="fld"><label for="g-link">Game link (optional)</label><input class="in" id="g-link" maxlength="300" type="url" placeholder="Lichess or chess.com link"></div>
+    <p class="hint" id="g-xp"></p>
+    <datalist id="g-openings"></datalist>
+    <div class="acts"><button class="btn danger" type="button" data-del hidden>Delete</button><span class="grow"></span><button class="btn" type="button" data-cancel>Cancel</button><button class="btn primary" type="submit" id="g-save">Log it</button></div>
   </form>
 
   <!-- journal entry -->
