@@ -5,6 +5,7 @@ import { catName } from "../lib/leveling/prefs";
 import { applyAward, awardTotal, CAT } from "../lib/leveling/xp";
 import type { AwardSpec, Data } from "../lib/leveling/types";
 import { levelUp, toast, toastAch } from "./fx";
+import { floatXp } from "./motion";
 
 export type Tab = "missions" | "journal" | "body" | "social" | "money" | "skills" | "character";
 export const VIEWS: Tab[] = ["missions", "journal", "body", "social", "money", "skills", "character"];
@@ -120,6 +121,7 @@ export function award(spec: AwardSpec): void {
   const r = applyAward(S.data.stats, spec);
   S.data.stats = r.stats;
   save();
+  if (!spec.quiet && total > 0) floatXp(total);
   if (!spec.quiet && total)
     toast(`${total > 0 ? "+" : ""}${total} XP · ${CAT[spec.cat] ? catName(S.data.prefs, spec.cat) : spec.title}`, total > 0 ? "xp" : "");
   if (r.levelAfter > r.levelBefore) setTimeout(() => levelUp(r.levelAfter), 500);

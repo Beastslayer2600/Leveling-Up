@@ -13,6 +13,7 @@ import { renderJournal } from "./journal";
 import { renderFocus, renderMorningCard, settleTimer } from "./rhythm";
 import { renderSession } from "./session";
 import { renderSkills } from "./skills";
+import { moveIndicators } from "./motion";
 import { renderMode, sync } from "./sync";
 import { $, ICON, cvar, dayBox, esc, fmtN, pct, rands, rands2, setCurrency, shortD, sumBy } from "./dom";
 import { S, VIEWS, enabledViews, type Tab } from "./state";
@@ -37,10 +38,10 @@ export function renderNav(): void {
   $("rail-nav").innerHTML = views.map(
     (v) =>
       `<button class="navi" type="button" role="tab" data-tab="${v}" aria-selected="${S.tab === v}">${ICON[v]}<span><b>${TAB_META[v].label}</b><small>${TAB_META[v].sub}</small></span></button>`,
-  ).join("");
+  ).join("") + `<i class="tab-ind" aria-hidden="true"></i>`;
   $("tabbar").innerHTML = views.map(
     (v) => `<button class="tab" type="button" role="tab" data-tab="${v}" aria-selected="${S.tab === v}">${ICON[v]}<span>${TAB_META[v].label}</span></button>`,
-  ).join("");
+  ).join("") + `<i class="tab-ind" aria-hidden="true"></i>`;
 }
 
 const cn = (id: string) => catName(S.data.prefs, id);
@@ -82,6 +83,7 @@ export function render(): void {
   $("achn").textContent = `${ach.filter((a) => st.ach[a.id]).length}/${ach.length}`;
 
   document.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === S.tab)));
+  requestAnimationFrame(moveIndicators);
   VIEWS.forEach((v) => ($("v-" + v).hidden = S.tab !== v));
   $("fabLbl").textContent = TAB_META[S.tab].fab;
   if (sync.mode === "server") renderMode();

@@ -9,6 +9,7 @@ import {
 import type { EarlyBreak, FocusRun } from "../lib/leveling/types";
 import { $, ICON, esc, radio, radioVal } from "./dom";
 import { toast } from "./fx";
+import { confetti, floatXp } from "./motion";
 import { S, after, award, newId, put, render, save, setTab } from "./state";
 
 const CIRC = 283;
@@ -78,7 +79,11 @@ function applyStep(step: Step): void {
   if (step.slot && (step.xp || step.bonus)) {
     const label = step.slot.label;
     if (step.xp) award({ delta: step.xp, title: `Focus: ${label}`, cat: SESSION.cat, quiet: true });
-    if (step.bonus) award({ delta: step.bonus, title: "Focus session bonus", cat: SESSION.cat, quiet: true });
+    if (step.bonus) {
+      award({ delta: step.bonus, title: "Focus session bonus", cat: SESSION.cat, quiet: true });
+      confetti({ count: 48, spread: 1.2 });
+    }
+    floatXp(step.xp + step.bonus);
     toast(`+${step.xp + step.bonus} XP · ${label}${step.bonus ? " + session bonus" : ""}`, "xp");
     after();
   }
